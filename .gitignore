@@ -1,0 +1,37 @@
+# Generated geometry: out/ is rebuilt by `scadwright build`.
+# img/ (reference photos) and rendered_img/ (published shots) stay tracked.
+out/
+*.stl
+*.3mf
+*.gcode
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# Working notes: kept local, never published
+spec.md
+spec-backfill.md
+scadwright-feedback.md
+design_docs/
+
+# Assistant tooling: never tracked
+.claude/
+.claude.json
+.claude.local.json
+.claude-*
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+.mcp.json
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
