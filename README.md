@@ -14,7 +14,7 @@ near face, so every label runs around the barrel rather than along it.
   <img src="rendered_img/hero.png?v=2" alt="The assembled calculator standing on end: three setting windows and the readout slot stacked up the near face" width="480">
 </p>
 
-*The whole instrument is 87 x 43 mm. It stands on end and reads down one
+*The whole instrument is 77 x 43 mm. It stands on end and reads down one
 face: guide number, film speed and power in their windows, then the slot
 giving the distance reached at each aperture. Every seam is a setting.*
 
@@ -151,13 +151,19 @@ Each stands on the axis it was engraved around.*
 
 ## Assembly
 
-Besides the printed parts you need one 1/4-20 bolt, 4 inches and **fully
-threaded**, since a part-threaded one has too long a plain shank for the
-nut to reach. Add one nut, two 1/4 inch fender washers of 2 inch outside
-diameter, and one compression spring about 16 mm across that seats in a
-20 mm bore, stands a millimetre proud of it, and compresses past that
-without going solid. Both washers have to be wider than the 43 mm body,
+Besides the printed parts you need one 1/4-20 bolt, 3 1/2 inches and
+**fully threaded**, since a part-threaded one has too long a plain shank
+for the nut to reach. Add one nut and two 1/4 inch fender washers of 2
+inch outside diameter. Both washers have to be wider than the 43 mm body,
 so they cap the ends rather than drop into them.
+
+The click comes from three compression springs, 3.5 mm across the coil
+with 0.5 mm wire and 10 mm long
+([these](https://www.ebay.com/itm/287411987228)). They drop into pockets
+around the cap's hub and stand a millimetre proud, so the nut washer
+lands on all three. Three in parallel come to about 7.5 N/mm,
+which is a firmer detent than one large spring in the middle; 0.4 mm wire
+gives a lighter one if you prefer it.
 
 <p align="center">
   <img src="rendered_img/exploded.png" alt="The five parts drawn apart along the bolt in the order they assemble" width="640">
@@ -184,18 +190,20 @@ stack drops together. Anywhere else a ring stops against the key.
    the one before it.
 2. Slide `end_cap` on over the key at the tube's far end. It is a sliding
    fit with nothing to bottom against, so the tube never takes bolt load.
-3. Drop the spring into the recess in the cap's end face. It stands a
-   millimetre proud of the rim.
+3. Drop a spring into each of the three pockets in the cap's end face.
+   They stand a millimetre proud of it.
 4. Bolt and washer through from the head end, bearing on the inner tube's
    end face.
-5. Washer and nut on the spring end. The washer meets the spring before
-   it meets the cap's rim, which bounds the travel. Tighten until the
-   segments click firmly but still turn by hand.
+5. Washer and nut on the spring end. The washer meets the three springs
+   before it meets the cap's end face, which bounds the travel. Tighten
+   until the segments click firmly but still turn by hand.
 
-The force path runs nut, washer, spring, cap, dist ring, iso ring, gn
-ring, inner tube, washer, bolt head. One path, with the spring in series,
-so a bump can climb out of its dimple without the assembly having to
-stretch.
+The force path runs nut, washer, springs, cap, dist ring, iso ring, gn
+ring, inner tube, washer, bolt head. One path, with the springs in
+series, so a bump can climb out of its dimple without the assembly having
+to stretch. The pockets sit on a circle outside the hub, at a radius the
+inner tube cannot reach, so the tube can never bottom on a spring and
+leave the rings unloaded.
 
 | part | what it carries |
 |---|---|
@@ -203,7 +211,7 @@ stretch.
 | `gn_ring` | GN window, ISO scale |
 | `iso_ring` | ISO window, and the third setting's scale |
 | `dist_ring` | third setting's window, and the readout table |
-| `end_cap` | readout slot, aperture headings, spring seat, nut |
+| `end_cap` | readout slot, aperture headings, spring pockets, nut |
 
 ## Built with SCADwright
 

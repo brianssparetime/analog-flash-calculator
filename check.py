@@ -264,24 +264,26 @@ def check_headings_line_up_with_values():
 
 
 def check_spring_bears_only_on_the_cap():
-    """Nothing but the end cap may touch the spring.
+    """Nothing but the end cap may touch a spring.
 
-    The inner tube runs the whole length, so if its far end reached the
-    spring seat the spring would push it straight back to the head washer
-    and the ring stack would never be loaded. That is a silent failure:
-    the tool assembles, and no detent clicks. The seat is therefore solid
-    cap across the whole spring bore, with the tube stopping below it.
+    A central spring had to be checked against the inner tube reaching its
+    seat, which would push the tube back to the head washer and leave the
+    ring stack unloaded: the tool assembles and no detent clicks. Pockets
+    on a circle outside the hub retire that failure by geometry rather
+    than by clearance, and this checks the geometry still holds.
     """
-    gap = D.spring_seat_z - D.inner_end_z
-    assert gap > D.tip_gap, (
-        f"the inner tube ends {gap:.2f} mm below the spring seat, which is "
-        f"not clear of it; the spring would short-circuit through the tube"
+    tube_r = D.inner_od / 2
+    pocket_inner_r = D.pocket_r - D.pocket_dia / 2
+    assert pocket_inner_r > tube_r, (
+        f"a pocket reaches in to r {pocket_inner_r:.2f}, inside the tube's "
+        f"r {tube_r:.2f}: the tube could bottom on a spring"
     )
-    assert D.cap_seat_t >= 2, "the spring seat is too thin to be a floor"
-    # The seat must be cap material right across whatever the spring rests
-    # on, from the bolt out to the recess wall.
-    assert D.spring_bore > D.bolt_d, "no annulus for the spring to sit on"
-    return gap
+    wall = D.outer_od / 2 - D.sleeve_wall - (D.pocket_r + D.pocket_dia / 2)
+    assert wall > 0, f"pockets break out through the cap wall by {-wall:.2f} mm"
+    # Each pocket must bottom on solid cap, not open into the readout slot.
+    floor = D.pocket_z0 - D.power_z1
+    assert floor > 0, "a pocket floor opens into the readout slot"
+    return pocket_inner_r - tube_r, wall, floor
 
 
 def check_travel_is_unobstructed():
@@ -300,8 +302,8 @@ def check_travel_is_unobstructed():
     lift = D.bump_proud
 
     # These open as the stack lengthens; they only need to exist.
-    assert D.spring_seat_z > D.inner_end_z, (
-        "the tube reaches the spring seat"
+    assert D.overall_len > D.inner_end_z, (
+        "the tube reaches the cap's end face"
     )
     assert D.seam_gap > 0, "the head washer would foul the first ring"
 
@@ -379,6 +381,11 @@ def check_spring_actually_loads():
     clicked. Both ends are checked, since a washer that drops into either
     end short-circuits the stack.
     """
+    reach = D.washer_od / 2 - (D.pocket_r + D.pocket_dia / 2)
+    assert reach > 0, (
+        f"a {D.washer_od:.0f} mm washer does not cover the pocket circle; "
+        f"it would miss a spring by {-reach:.2f} mm"
+    )
     assert D.washer_od > D.outer_od, (
         f"a {D.washer_od:.0f} mm washer does not cap a {D.outer_od:.0f} mm "
         f"stack; it would drop in and bypass the spring"
@@ -450,8 +457,9 @@ if __name__ == "__main__":
     print(f"travel         nothing fouls a detent lifting "
           f"{D.bump_proud:.2f} mm; {slack:.2f} mm of seam to spare")
 
-    gap = check_spring_bears_only_on_the_cap()
-    print(f"spring seat    solid cap floor; inner tube stops {gap:.1f} mm short")
+    clear_r, wall, floor = check_spring_bears_only_on_the_cap()
+    print(f"spring seat    pockets clear the tube by {clear_r:.1f} mm and the "
+          f"wall by {wall:.1f} mm; {floor:.1f} mm of floor")
 
     cap, lift = check_spring_actually_loads()
     print(f"spring         washer overhangs the stack by {cap / 2:.1f} mm "

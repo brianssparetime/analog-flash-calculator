@@ -153,33 +153,45 @@ SHOTS = [
 ]
 
 
-# The assembly animation. `scadwright morph` will write an APNG directly,
-# but every frame gets the same duration, so the loop restarts the instant
-# the tool comes together and the finished object is never on screen long
-# enough to look at. Rendering the frames and re-encoding them here holds
-# the last one for a beat first.
-ANIM = dict(name="assembly", frames=48, hold=24, fps=30, size="700x1000")
+# The assembly animation, in three steps rather than one.
+#
+# `scadwright morph` will write the APNG itself, but it gives every frame
+# the same duration and aims OpenSCAD's default camera, so the loop
+# restarts the instant the tool comes together and it does so with the
+# reading face turned away. Taking the animated SCAD instead lets the
+# same camera the stills use frame it, and lets the last frame be held.
+ANIM = dict(name="assembly", frames=48, hold=24, fps=30, size=(700, 1000),
+            camera=(0, 0, 80, 82, 0, 80))
 
 
 def animate(spec=ANIM):
-    """Render the morph and encode it with a pause before it loops."""
+    """Render the morph on the reading face, holding before it loops."""
     out = IMG / f"{spec['name']}.apng"
     tmp = Path(tempfile.mkdtemp(prefix="morph-"))
     try:
+        scad = tmp / "morph.scad"
         subprocess.run(
             [".venv/bin/scadwright", "morph", "main.py", "assemble",
-             str(tmp / "f.png"), f"--frames={spec['frames']}",
-             "--colorscheme", INKED, "--imgsize", spec["size"]],
+             str(scad), f"--frames={spec['frames']}"],
             check=True, capture_output=True, text=True,
         )
-        frames = sorted(tmp.glob("f_*.png"))
+        w, h = spec["size"]
+        subprocess.run(
+            [OPENSCAD, "-o", str(tmp / "f.png"),
+             f"--animate={spec['frames']}", f"--imgsize={w},{h}",
+             "--camera=" + ",".join(
+                 f"{v:g}" for v in (*spec["camera"], fit(254, spec["size"]))),
+             f"--colorscheme={INKED}", str(scad)],
+            check=True, capture_output=True, text=True,
+        )
+        frames = sorted(tmp.glob("f*.png"))
         if not frames:
-            raise SystemExit("morph produced no frames")
+            raise SystemExit("no frames rendered from the morph")
         for i in range(len(frames), len(frames) + spec["hold"]):
-            shutil.copyfile(frames[-1], tmp / f"f_{i:04d}.png")
+            shutil.copyfile(frames[-1], tmp / f"f{i:05d}.png")
         subprocess.run(
             ["ffmpeg", "-y", "-loglevel", "error",
-             "-framerate", str(spec["fps"]), "-i", str(tmp / "f_%04d.png"),
+             "-framerate", str(spec["fps"]), "-i", str(tmp / "f%05d.png"),
              "-plays", "0", str(out)],
             check=True, capture_output=True, text=True,
         )

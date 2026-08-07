@@ -92,7 +92,10 @@ class AnalogFlashCalculator(Design):
     # chain and what bounds the total axial travel.
     washer = Tube(h=1.6, od=D.washer_od, id=7)
     fender = Tube(h=1.6, od=D.washer_od, id=7)
-    spring = Spring(r=8.0, wire_r=0.8, pitch=2.6, turns=5)
+    # One 3.5 mm x 0.5 wire x 10 mm spring, drawn three times: stock
+    # hardware, and three in parallel give a firmer detent than the single
+    # large spring they replace.
+    spring = Spring(r=1.5, wire_r=0.25, pitch=1.125, turns=8)
 
     def _posed(self):
         """The four segments rotated to POSE, innermost first.
@@ -117,29 +120,33 @@ class AnalogFlashCalculator(Design):
     def _hardware(self, spread):
         """Stand-in 1/4 inch bolt, washers and spring.
 
-        The spring seats in the end cap's recess at the nut end, which
-        puts it in series with the whole stack. The washer above it is a
-        fender washer: it spans the recess and bears on the proud spring,
-        where an ordinary one would drop into the bore.
+        Three springs seat in pockets around the cap's hub at the nut end,
+        which puts them in series with the whole stack. The washer above
+        them is a fender washer: it spans the whole pocket circle and
+        bears on all three where a smaller one would miss them.
 
-        `spread` draws the two ends apart for the exploded stage. What is
-        yielded, and in what order, never varies with it.
+        Drawn tightened: the nut washer sits on the cap's end face, which
+        is the hard stop that bounds travel, and the springs are shut into
+        their pockets. `spread` draws the two ends apart for the exploded
+        stage. What is yielded, and in what order, never varies with it.
         """
         lead = -spread * 30                       # head end, below
         tail = spread * (3 * EXPLODE_STEP + 20)   # nut end, above
-        head_z = -12.0 + lead
+        washer_t = 1.6
+        head_z = -washer_t + lead                 # its face bears on z = 0
 
-        yield cylinder(h=D.overall_len + 20, d=6.35).up(head_z).color("silver")
+        yield cylinder(h=D.overall_len + 26, d=6.35).up(head_z - 6).color("silver")
         yield cylinder(h=5, d=13).up(head_z - 5).color("silver")
         yield self.washer.up(head_z).color("silver")
-        # Seated in the cap's recess and standing `spring_proud` out of
-        # it, so the washer meets the spring before the cap's rim.
-        yield self.spring.up(D.inner_end_z + tail).color("gold")
-        yield self.fender.up(
-            D.overall_len + D.spring_proud + tail
-        ).color("silver")
+        n = int(D.spring_count)
+        for i in range(n):
+            yield (self.spring
+                   .translate([D.pocket_r, 0, D.pocket_z0 + tail])
+                   .rotate([0, 0, i * 360.0 / n])
+                   .color("gold"))
+        yield self.fender.up(D.overall_len + tail).color("silver")
         yield cylinder(h=5.5, d=11.5, fn=6).up(
-            D.overall_len + D.spring_proud + 1.6 + tail
+            D.overall_len + washer_t + tail
         ).color("silver")
 
     def _scene(self, spread):
@@ -180,9 +187,10 @@ class AnalogFlashCalculator(Design):
 
     @variant(fn=96, out="out/analog-flash-calculator-section.scad")
     def section(self):
-        # Half the assembly away, to eyeball wall thicknesses, the
-        # concentric clearances, and where the spring actually seats.
-        return self._scene(0.0).halve([0, 0, -1])
+        # Half the assembly away, on a plane through the axis, so the
+        # nesting, the clearances and the spring pockets all show. Cut
+        # across the axis instead and there is nothing to see.
+        return self._scene(0.0).halve([0, -1, 0])
 
     # The stack coming together, for a posting-friendly animation.
     assemble = morph(stages=["exploded", "display"])

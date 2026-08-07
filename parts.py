@@ -510,9 +510,7 @@ class EndCap(Component):
             cylinder(h=D.inner_end_z - B4 + D.tip_gap + EPS,
                      d=D.spigot_bore).up(B4 - EPS),
             self._keyway(),
-            # Spring recess. Its floor is solid cap across the whole bore,
-            # so the spring can only ever push on the cap.
-            cylinder(h=D.spring_depth + EPS, d=D.spring_bore).up(D.spring_seat_z),
+            self._spring_pockets(),
             cylinder(h=D.overall_len + 2 * EPS, d=D.bolt_d).down(EPS),
         ]
         cutters += list(self._legends())
@@ -520,6 +518,22 @@ class EndCap(Component):
 
     def _keyway(self):
         return keyway(B4, D.inner_end_z + D.tip_gap)
+
+    def _spring_pockets(self):
+        """Three blind pockets on a circle outside the hub.
+
+        They open at the cap's end face and bottom on solid cap, so a
+        spring can only ever push against the cap. Sitting outside the
+        hub's radius, they run alongside the key engagement rather than
+        beyond it, and the inner tube cannot reach one however the stack
+        is tightened.
+        """
+        one = (
+            cylinder(h=D.pocket_depth + EPS, d=D.pocket_dia)
+            .translate([D.pocket_r, 0, D.pocket_z0])
+        )
+        return one.rotate_copy(angle=360.0 / int(D.spring_count),
+                               n=int(D.spring_count), axis=[0, 0, 1])
 
     def _legends(self):
         # Aperture headings come before the slot, one per column; the

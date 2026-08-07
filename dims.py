@@ -25,7 +25,7 @@ every spigot bore in between. Nothing with a spigot bore can thread past
 that dumbbell from either end.
 
 Splitting the inner tube's far end into a separate cap resolves it, and
-the cap earns its keep: it takes the nut, houses the spring, and closes
+the cap earns its keep: it takes the nut, houses the springs, and closes
 the readout end. Everything then threads on from the right, in order.
 
 Detents
@@ -41,18 +41,22 @@ the only place the stack can bottom out and a bump can always lift clear.
 
 Force path
 ----------
-Nut -> washer -> spring -> end cap -> dist ring -> iso ring -> gn ring ->
-inner tube -> washer -> bolt head. One path, with the spring in series,
+Nut -> washer -> springs -> end cap -> dist ring -> iso ring -> gn ring ->
+inner tube -> washer -> bolt head. One path, with the springs in series,
 so a bump can climb out of its dimple without the assembly stretching.
 
 The end cap slides on its key rather than seating against a shoulder, so
 the inner tube cannot take the bolt load in parallel and leave the rings
-loose. The washer is *wider* than the spring counterbore, so it spans the
-recess and meets the spring standing `spring_proud` above the rim. The
-rim then becomes a hard stop that bounds travel, tuned at the nut. A
-spring sunk flush would let the washer bottom on that rim and bypass the
-spring entirely, which is a silent failure: everything looks assembled
-and nothing clicks.
+loose. Three springs stand `spring_proud` above the cap's end face, so
+the nut washer meets them before it meets the face, and the face becomes
+a hard stop that bounds travel, tuned at the nut. Springs sunk flush
+would let the washer bottom on the face and bypass them entirely, which
+is a silent failure: everything looks assembled and nothing clicks.
+
+The pockets sit on a circle outside the hub, so they run alongside the
+key engagement rather than beyond it. That is worth ten millimetres of
+length, and it also puts the springs at a radius the inner tube cannot
+reach, which retires the failure a central spring has to be checked for.
 """
 
 from scadwright import Spec, arg
@@ -144,18 +148,28 @@ class Dims(Spec):
         # nut washer meets the spring first and the cap's rim becomes a
         # hard stop: total axial travel is bounded, and tuned at the nut.
         washer_od = 51                  # 2 in fender washer, 1/4 in bore
-        spring_bore = 20
-        spring_depth = 8                # recess in the cap's end face
-        spring_proud = bump_proud + 0.3 # stand-off at rest
-        cap_seat_t = 3                  # solid floor the spring pushes on
 
-        # The inner tube stops here, and the cap's seat is a solid floor
-        # above it with only a bolt hole through. The tube therefore
-        # cannot reach the spring: if it could, the spring would push it
-        # back to the head washer and the rings would never be loaded.
+        # Three small springs in their own pockets, on a circle outside the
+        # hub. Sitting at a radius the hub does not use, they run alongside
+        # the key engagement instead of beyond it, which is what keeps the
+        # tail short. Three points also seat the washer without cocking it.
+        spring_count = 3
+        spring_od = 3.5                 # stock 3.5 x 0.5 wire x 10 free
+        pocket_slip = 0.5
+        pocket_dia = spring_od + pocket_slip
+        pocket_r = (inner_od / 2 + key_h + key_slip / 2
+                    + outer_od / 2 - sleeve_wall) / 2
+        pocket_depth = 9                # 10 mm spring, standing proud
+        spring_proud = bump_proud + 0.3 # stand-off at rest
+
+        # The inner tube stops short of the cap's end face, which is solid
+        # but for the bolt hole. The pockets sit outside the tube's radius
+        # altogether, so unlike a central spring there is no way for the
+        # tube to reach one and short-circuit the ring stack.
+        end_t = 1.5                     # closes the cap over the tube's tip
         inner_end_z = power_z1 + cap_web_t + key_len
-        spring_seat_z = inner_end_z + tip_gap + cap_seat_t
-        overall_len = spring_seat_z + spring_depth
+        overall_len = inner_end_z + tip_gap + end_t
+        pocket_z0 = overall_len - pocket_depth
 
         # --- windows ------------------------------------------------------
         window_arc = 28                 # degrees; see check_windows_frame_labels
@@ -201,11 +215,12 @@ class Dims(Spec):
         # the spring: the assembly then looks right and nothing clicks.
         washer_od > outer_od            # caps the end, never enters it
         spring_proud > bump_proud       # a bump can lift before the cap
-        spring_bore > bolt_d
-        spring_bore < outer_od - 2 * sleeve_wall   # cap keeps its wall
+        pocket_dia > spring_od          # the spring drops in, not presses
+        pocket_r + pocket_dia / 2 < outer_od / 2 - sleeve_wall   # keeps its wall
+        pocket_r - pocket_dia / 2 > inner_od / 2 + key_h + key_slip / 2
+        pocket_z0 > power_z1 + cap_web_t           # floor stays out of the slot
         spring_depth > 2 * bump_proud   # room to climb out of a detent
-        spring_seat_z - inner_end_z > tip_gap   # tube clear of the seat
-        cap_seat_t >= 2                 # the seat is a real floor
+        overall_len - inner_end_z > tip_gap     # tube clear of the end
     """
 
 
