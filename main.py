@@ -63,14 +63,15 @@ EXPLODE_STEP = 30.0
 
 
 def stand_up(node):
-    """Turn the reading line to face +X, leaving the axis along +Z.
+    """Stand the assembly guide-number-end up, reading line facing +X.
 
-    The instrument is held upright and read across, so the posed views
-    stand it on end. `_posed` already turns the reading line to +X, so
-    this only has to leave the assembly alone: a camera on +X sees every
-    window and the slot stacked up the near face, labels level.
+    The bands are built from the GN end at z = 0, but that end is the one
+    held uppermost: a thumb and finger reach the top of the tool, not the
+    bottom, so the settings have to run downward from there. Turning the
+    whole assembly over puts band A on top and leaves the reading line
+    facing +X, where `_posed` put it.
     """
-    return node
+    return node.rotate([180, 0, 0]).up(D.overall_len)
 
 
 class AnalogFlashCalculator(Design):

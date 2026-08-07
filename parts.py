@@ -68,8 +68,9 @@ def window_rows(r0, r1):
     mid, off = (lo + hi) / 2, (hi - lo) / 4
     return mid + off, mid - off        # metres above feet
 
-# Negative angles come before a window, reading around the barrel.
-ABOVE = -(D.window_arc / 2 + 12)
+# Held guide-number-end up, the barrel reads the other way round, so a
+# label that comes first sits at a positive angle.
+ABOVE = D.window_arc / 2 + 12
 
 
 def label_arc(od, label, size):
@@ -107,7 +108,7 @@ def beside_window(od, label, size, after=False, gap=2.5):
     of the way instead of being swallowed by the window it names.
     """
     off = D.window_arc / 2 + label_arc(od, label, size) / 2 + gap
-    return off if after else -off
+    return -off if after else off
 
 
 # ---------------------------------------------------------------------------
@@ -124,6 +125,11 @@ def engrave_text(*, od, z, label, angle, size, depth=None, font=SCALE_FONT):
     side, and each label costs the band only its glyph height rather than
     its whole length. What it costs instead is arc, which is why the body
     is as wide as it is.
+
+    `flip` turns each glyph in the tangent plane, which is what lets the
+    tool be held guide-number-end up: band A sits at the top in the hand,
+    so the text has to read the other way round from the order the bands
+    are built in.
     """
     ref = Tube(h=_REF_H, od=od, thk=3)
     return ref.text_geometry(
@@ -136,7 +142,7 @@ def engrave_text(*, od, z, label, angle, size, depth=None, font=SCALE_FONT):
         at_z=0,                       # mid-wall
         text_dir="circumferential",
         rotate_glyphs=False,
-        flip=False,
+        flip=True,
     ).up(z - _REF_H / 2)
 
 
@@ -491,16 +497,19 @@ class EndCap(Component):
         power_mid = B3 + D.power_band / 2
 
         # The slot is a column of eight readings rather than one value, so
-        # its name heads the column instead of sitting beside it, where it
+        # its name sits under the column instead of beside it, where it
         # would land on the aperture headings.
         before, after = LAYOUT.legend
+        # Under the column as the tool is held: the cap has no material
+        # on the other side of the slot to engrave.
+        head_z = B4 + D.legend_font + 2
         yield engrave_text(
-            od=D.outer_od, z=B4 + D.legend_font + 2, angle=0,
+            od=D.outer_od, z=head_z, angle=0,
             label=" ".join(p for p in (before, after) if p),
             size=D.legend_font,
         )
         yield engrave_text(
-            od=D.outer_od, z=B4 + D.legend_font + 2, angle=above,
+            od=D.outer_od, z=head_z, angle=above,
             label=LAYOUT.heading, size=D.legend_font,
         )
 

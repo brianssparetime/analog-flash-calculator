@@ -1,7 +1,8 @@
 """Beauty shots, and the camera settings that produce them.
 
-    python renders.py                # every shot into rendered_img/
+    python renders.py                # every shot and the animation
     python renders.py hero power     # only shots whose name contains these
+    python renders.py assembly       # just the animation
 
 This file is the record of how each image was framed. Every camera below
 is OpenSCAD's own gimbal form -- the seven numbers it prints in its status
@@ -22,8 +23,10 @@ Rebuild the .scad files first if the model has changed:
     scadwright build main.py --variant=display
 """
 
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from dims import Dims as D
@@ -34,18 +37,12 @@ IMG = HERE / "rendered_img"
 
 OPENSCAD = "/Applications/OpenSCAD.app/Contents/MacOS/OpenSCAD"
 
-# Two schemes, chosen per shot by which of OpenSCAD's preview artifacts
-# tells the truth at that angle.
-#
-# Preview fills the faces of a subtracted volume in a contrasting colour.
-# Looking straight down at an engraving, that reads exactly like the paint
-# fill the finished part is meant to get, and it makes the scales legible.
-# At a three-quarter angle it instead floods the inside walls of a window,
-# so an opening you should be able to see through looks solid. Monotone
-# gives every face the same colour, which kills the artifact and costs
-# only some engraving contrast.
-INKED = "Metallic"      # straight-on: engraving reads as paint fill
-HONEST = "Monotone"     # angled: windows read as openings
+# One scheme for every shot, the same Metallic that SCADwright's own
+# documentation images use: a lavender backdrop with the part in gold and
+# every cut face in magenta. Preview fills the faces of a subtracted
+# volume in that contrasting colour, which reads exactly like the paint
+# fill the finished engraving is meant to get.
+INKED = HONEST = "Metallic"
 
 # Preview (OpenCSG), not a full CGAL render. Every engraving is a separate
 # difference and there are several hundred of them, so CGAL takes minutes
@@ -156,6 +153,41 @@ SHOTS = [
 ]
 
 
+# The assembly animation. `scadwright morph` will write an APNG directly,
+# but every frame gets the same duration, so the loop restarts the instant
+# the tool comes together and the finished object is never on screen long
+# enough to look at. Rendering the frames and re-encoding them here holds
+# the last one for a beat first.
+ANIM = dict(name="assembly", frames=48, hold=24, fps=30, size="700x1000")
+
+
+def animate(spec=ANIM):
+    """Render the morph and encode it with a pause before it loops."""
+    out = IMG / f"{spec['name']}.apng"
+    tmp = Path(tempfile.mkdtemp(prefix="morph-"))
+    try:
+        subprocess.run(
+            [".venv/bin/scadwright", "morph", "main.py", "assemble",
+             str(tmp / "f.png"), f"--frames={spec['frames']}",
+             "--colorscheme", INKED, "--imgsize", spec["size"]],
+            check=True, capture_output=True, text=True,
+        )
+        frames = sorted(tmp.glob("f_*.png"))
+        if not frames:
+            raise SystemExit("morph produced no frames")
+        for i in range(len(frames), len(frames) + spec["hold"]):
+            shutil.copyfile(frames[-1], tmp / f"f_{i:04d}.png")
+        subprocess.run(
+            ["ffmpeg", "-y", "-loglevel", "error",
+             "-framerate", str(spec["fps"]), "-i", str(tmp / "f_%04d.png"),
+             "-plays", "0", str(out)],
+            check=True, capture_output=True, text=True,
+        )
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+    return out.stat().st_size
+
+
 def render(shot):
     if not shot.source.exists():
         raise SystemExit(
@@ -185,9 +217,15 @@ if __name__ == "__main__":
     wanted = [a for a in sys.argv[1:] if not a.startswith("-")]
     shots = [s for s in SHOTS
              if not wanted or any(w in s.name for w in wanted)]
-    if not shots:
+    want_anim = not wanted or any(w in ANIM["name"] for w in wanted)
+    if not shots and not want_anim:
         raise SystemExit(f"no shot matches {wanted}")
 
     for shot in shots:
         size = render(shot)
         print(f"{shot.name:<20} {size / 1024:6.0f} kB  {shot.caption}")
+
+    if want_anim:
+        size = animate()
+        print(f"{ANIM['name']:<20} {size / 1024:6.0f} kB  "
+              f"The five pieces closing up, holding on the finished tool.")
