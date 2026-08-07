@@ -25,14 +25,16 @@ Assembly runs right to left: gn ring, iso ring, dist ring, end cap, each
 sliding over the inner tube's plain body and seating on the one before.
 """
 
-from scadwright import BBox, Component
+from math import asin, degrees
+
+from scadwright import BBox, Component, bbox
 from scadwright.boolops import difference, union
 from scadwright.primitives import cube, cylinder, sphere
 from scadwright.shapes import PieSlice, Tube
 
 from dims import DETENT_BUMPS, DETENT_DIVOTS, LAYOUT, Dims
 from scales import (
-    DISTANCES_FT, DISTANCES_M, GUIDE_NUMBERS, ISOS, window_legend,
+    DETENTS, DISTANCES_FT, DISTANCES_M, GUIDE_NUMBERS, ISOS, window_legend,
 )
 
 D = Dims
@@ -56,14 +58,56 @@ B2 = D.dist_z0
 B3 = D.power_z0
 B4 = D.power_z1
 
-# Where the two distance rows sit within their band, as a fraction of it.
-# The window legend and the scale itself both read from these, so the
-# unit markers cannot drift off the rows they label.
-METRE_ROW = 0.29
-FOOT_ROW = 0.71
+def window_rows(r0, r1):
+    """The z of the metre and feet rows inside a band's window.
 
-# Negative angles sit above a window when the tool is laid down and read.
+    Both the scale and the unit markers beside it read from here, so the
+    markers cannot drift off the rows they label.
+    """
+    lo, hi = r0 + D.window_margin, r1 - D.window_margin
+    mid, off = (lo + hi) / 2, (hi - lo) / 4
+    return mid + off, mid - off        # metres above feet
+
+# Negative angles come before a window, reading around the barrel.
 ABOVE = -(D.window_arc / 2 + 12)
+
+
+def label_arc(od, label, size):
+    """How much of the circumference a label takes, in degrees."""
+    bb = bbox(engrave_text(od=od, z=0, label=label, angle=0, size=size))
+    return 2 * degrees(asin(max(abs(bb.min[1]), abs(bb.max[1])) / (od / 2)))
+
+
+def offscale_marks(*, od, z, size, marks, angle_of):
+    """Arrows in the detents a scale does not reach.
+
+    Every scale is shorter than the twelve detents around the tool, so
+    some settings show a blank window. Rather than leave the reader
+    guessing whether the tool is broken, each empty detent carries an
+    arrow toward the nearer end of the scale, and the odd one equidistant
+    from both ends carries a pair.
+    """
+    last = len(marks) - 1
+    for u in range(len(marks), DETENTS):
+        to_last, to_first = u - last, DETENTS - u
+        here = angle_of(u)
+        if to_last == to_first:
+            label = "<>"
+        else:
+            near = angle_of(last if to_last < to_first else 0)
+            label = ">" if (near - here + 180) % 360 - 180 > 0 else "<"
+        yield engrave_text(od=od, z=z, label=label, angle=here, size=size)
+
+
+def beside_window(od, label, size, after=False, gap=2.5):
+    """Angle that sets `label` just clear of a window, before or after it.
+
+    Measured off the label's own geometry rather than guessed from its
+    character count, so a longer unit or a bigger font moves itself out
+    of the way instead of being swallowed by the window it names.
+    """
+    off = D.window_arc / 2 + label_arc(od, label, size) / 2 + gap
+    return off if after else -off
 
 
 # ---------------------------------------------------------------------------
@@ -74,8 +118,12 @@ def engrave_text(*, od, z, label, angle, size, depth=None, font=SCALE_FONT):
     """An inset-text cutter centred at absolute height `z` on a wall of
     diameter `od`.
 
-    Glyphs run along the axis and read left to right with +Z to the right,
-    which is how the instrument is held.
+    Glyphs run around the circumference, so a label reads across the
+    barrel with the tool stood on end. That is the posture the whole
+    instrument is laid out for: every window and the slot stack up the
+    side, and each label costs the band only its glyph height rather than
+    its whole length. What it costs instead is arc, which is why the body
+    is as wide as it is.
     """
     ref = Tube(h=_REF_H, od=od, thk=3)
     return ref.text_geometry(
@@ -86,9 +134,9 @@ def engrave_text(*, od, z, label, angle, size, depth=None, font=SCALE_FONT):
         font=font,
         angle=angle,
         at_z=0,                       # mid-wall
-        text_dir="axial",
-        rotate_glyphs=True,
-        flip=True,
+        text_dir="circumferential",
+        rotate_glyphs=False,
+        flip=False,
     ).up(z - _REF_H / 2)
 
 
@@ -212,6 +260,11 @@ class InnerTube(Component):
                 od=D.spigot_od, z=(B0 + B1) / 2, label=label,
                 angle=LAYOUT.setting_angle("gn", g), size=D.scale_font,
             )
+        yield from offscale_marks(
+            od=D.spigot_od, z=(B0 + B1) / 2, size=D.scale_font,
+            marks=GUIDE_NUMBERS,
+            angle_of=lambda u: LAYOUT.setting_angle("gn", u),
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -229,7 +282,7 @@ class _SettingRing(Component):
 
     READS = ()          # (z0, z1) of the band this ring's window looks at
     CARRIES = ()        # (z0, z1) of the band this ring's scale sits in
-    LEGEND = ""
+    LEGEND = ("", "")   # (before, after) the window, on its own line
 
     def tight_bbox(self):
         # The bumps stand proud of the spigot's end face.
@@ -248,11 +301,18 @@ class _SettingRing(Component):
             window(z0=r0 + D.window_margin,
                    length=(r1 - r0) - 2 * D.window_margin),
             divots(r1),
-            engrave_text(
-                od=D.outer_od, z=(r0 + r1) / 2, label=self.LEGEND,
-                angle=D.window_arc / 2 + 13, size=D.legend_font,
-            ),
         ]
+        # Name before the window and unit after it, on the window's own
+        # line, so the three read across together: GN 32 m.
+        before, after = self.LEGEND
+        mid = (r0 + r1) / 2
+        for label, is_after in ((before, False), (after, True)):
+            if label:
+                cutters.append(engrave_text(
+                    od=D.outer_od, z=mid, label=label, size=D.legend_font,
+                    angle=beside_window(D.outer_od, label, D.legend_font,
+                                        after=is_after),
+                ))
         cutters += list(self.window_legends())
         cutters += list(self.scale())
         return engrave(body, cutters)
@@ -270,7 +330,7 @@ class GnRing(_SettingRing):
 
     READS = (B0, B1)
     CARRIES = (B1, B2)
-    LEGEND = window_legend("gn")        # guide numbers are quoted in metres
+    LEGEND = window_legend("gn")        # reads: GN 32 m
 
     def scale(self):
         for i, label in enumerate(ISOS):
@@ -278,6 +338,10 @@ class GnRing(_SettingRing):
                 od=D.spigot_od, z=(B1 + B2) / 2, label=label,
                 angle=LAYOUT.setting_angle("iso", i), size=D.scale_font,
             )
+        yield from offscale_marks(
+            od=D.spigot_od, z=(B1 + B2) / 2, size=D.scale_font,
+            marks=ISOS, angle_of=lambda u: LAYOUT.setting_angle("iso", u),
+        )
 
 
 class IsoRing(_SettingRing):
@@ -292,7 +356,7 @@ class IsoRing(_SettingRing):
 
     READS = (B1, B2)
     CARRIES = (B2, B3)
-    LEGEND = "ISO"          # its window shows the film speed
+    LEGEND = window_legend("iso")       # its window shows the film speed
 
     def scale(self):
         span = B3 - B2
@@ -303,13 +367,24 @@ class IsoRing(_SettingRing):
                     od=D.spigot_od, z=B2 + span / 2, label=label,
                     angle=LAYOUT.setting_angle("third", t), size=D.dist_font,
                 )
+            yield from offscale_marks(
+                od=D.spigot_od, z=B2 + span / 2, size=D.dist_font,
+                marks=labels,
+                angle_of=lambda u: LAYOUT.setting_angle("third", u),
+            )
             return
+        metre_z, foot_z = window_rows(B2, B3)
         for t, (m_label, ft_label) in enumerate(zip(DISTANCES_M, DISTANCES_FT)):
             angle = LAYOUT.setting_angle("third", t)
-            yield engrave_text(od=D.spigot_od, z=B2 + span * METRE_ROW,
+            yield engrave_text(od=D.spigot_od, z=metre_z,
                                label=m_label, angle=angle, size=D.dist_font)
-            yield engrave_text(od=D.spigot_od, z=B2 + span * FOOT_ROW,
+            yield engrave_text(od=D.spigot_od, z=foot_z,
                                label=ft_label, angle=angle, size=D.dist_font)
+        for row_z in (metre_z, foot_z):
+            yield from offscale_marks(
+                od=D.spigot_od, z=row_z, size=D.dist_font, marks=DISTANCES_M,
+                angle_of=lambda u: LAYOUT.setting_angle("third", u),
+            )
 
 
 class DistRing(_SettingRing):
@@ -327,7 +402,7 @@ class DistRing(_SettingRing):
         # that is distance the two rows carry their own unit marks, so the
         # legend stays bare.
         if LAYOUT.third == "distance":
-            return "DIST"
+            return "DIST", ""       # the two rows carry their own units
         return window_legend(LAYOUT.third, LAYOUT.units)
 
     def window_legends(self):
@@ -339,11 +414,10 @@ class DistRing(_SettingRing):
         """
         if LAYOUT.third != "distance":
             return
-        span = B3 - B2
-        for frac, unit in ((METRE_ROW, "m"), (FOOT_ROW, "ft")):
+        for z, unit in zip(window_rows(B2, B3), ("m", "ft")):
             yield engrave_text(
-                od=D.outer_od, z=B2 + span * frac, label=unit,
-                angle=ABOVE, size=D.legend_font,
+                od=D.outer_od, z=z, label=unit, size=D.legend_font,
+                angle=beside_window(D.outer_od, unit, D.legend_font, after=True),
             )
 
     def scale(self):
@@ -354,6 +428,11 @@ class DistRing(_SettingRing):
                     od=D.spigot_od, z=col_mid, label=label,
                     angle=LAYOUT.table_angle(v, c), size=D.power_font,
                 )
+            yield from offscale_marks(
+                od=D.spigot_od, z=col_mid, size=D.power_font,
+                marks=LAYOUT.value_marks,
+                angle_of=lambda u, c=c: LAYOUT.table_angle(u, c),
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -405,15 +484,24 @@ class EndCap(Component):
         )
 
     def _legends(self):
-        # The aperture row goes above the window, over the values inside
-        # it, as on the paper original; the legend drops below.
+        # Aperture headings come before the slot, one per column; the
+        # slot's own name and unit sit either side of its mid-height, on
+        # the same line, the way each setting window is labelled.
         above = ABOVE
-        below = D.window_arc / 2 + 30
         power_mid = B3 + D.power_band / 2
 
+        # The slot is a column of eight readings rather than one value, so
+        # its name heads the column instead of sitting beside it, where it
+        # would land on the aperture headings.
+        before, after = LAYOUT.legend
         yield engrave_text(
-            od=D.outer_od, z=power_mid, label=LAYOUT.legend,
-            angle=below, size=D.legend_font,
+            od=D.outer_od, z=B4 + D.legend_font + 2, angle=0,
+            label=" ".join(p for p in (before, after) if p),
+            size=D.legend_font,
+        )
+        yield engrave_text(
+            od=D.outer_od, z=B4 + D.legend_font + 2, angle=above,
+            label=LAYOUT.heading, size=D.legend_font,
         )
 
         # Aperture headings beside the slot, one per column, with a tick

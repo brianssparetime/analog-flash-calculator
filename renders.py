@@ -12,9 +12,10 @@ re-run without hunting for the angle again.
 
 `cx, cy, cz` is the point looked at, `rx, ry, rz` the camera rotation in
 degrees, and `dist` how far back it sits. Rotation (0, 0, 0) looks
-straight down -Z with +X to the right, which is why the assembled
-variants lie along +X with their reading line facing +Z: at rz = 0 the
-text reads left to right and the whole line is in frame.
+straight down -Z; (90, 0, 90) looks level along -X, which is the view the
+instrument is built for. The posed variants stand on end with their
+reading line facing +X, so that camera sees every window and the slot
+stacked up the near face with their labels level.
 
 Rebuild the .scad files first if the model has changed:
 
@@ -52,21 +53,26 @@ HONEST = "Monotone"     # angled: windows read as openings
 # sizes. Pass --cgal if a shot ever needs the real mesh.
 CGAL = "--cgal" in sys.argv
 
-# The assembled variants lie along +X. These are the landmarks worth
-# aiming a camera at, in that laid-down frame.
+# The assembled variants stand along +Z. These are the heights worth
+# aiming a camera at.
 MID = D.overall_len / 2                       # middle of the whole tool
 POWER_MID = D.power_z0 + D.power_band / 2     # middle of the aperture slot
-WINDOWS_MID = D.dist_z0 / 2                   # the three setting windows
+WINDOWS_MID = D.power_z0 / 2                  # the three setting windows
 
 
-def fit(span_mm, size, margin=1.15):
-    """Camera distance that frames `span_mm` of width in an image of `size`.
+def fit(span_mm, size, margin=1.1):
+    """Camera distance that frames `span_mm` of height in an image of `size`.
 
     OpenSCAD's default field of view is 22.5 degrees, so the visible
     height at distance d is 0.4 * d and the visible width scales with the
     aspect ratio. Solving for d keeps the framing right when an image
     size changes, instead of leaving a hand-tuned number to go stale.
     """
+    return span_mm * margin / 0.4
+
+
+def fit_wide(span_mm, size, margin=1.1):
+    """Camera distance that frames `span_mm` of width instead."""
     w, h = size
     return span_mm * margin / (0.4 * w / h)
 
@@ -93,56 +99,57 @@ class Shot:
         return IMG / f"{self.name}.png"
 
 
-# Sizes first, so the camera distances can be solved from them.
-WIDE = (2000, 700)
+# Sizes first, so the camera distances can be solved from them. The tool
+# stands on end, so most shots are portrait.
+TALL = (1100, 1700)
 LANDSCAPE = (1800, 1050)
-DETAIL = (1800, 900)
+DETAIL = (1000, 1300)
 
 SHOTS = [
     Shot(
         "hero", "display",
-        camera=(MID, 0, 0, 63, 0, 38, fit(210, LANDSCAPE)),
-        size=LANDSCAPE,
+        camera=(0, 0, MID, 84, 0, 80, fit(102, TALL)),
+        size=TALL,
         caption="Three-quarter view of the whole instrument.",
     ),
     Shot(
         "reading-line", "display",
-        camera=(MID, 0, 0, 0, 0, 0, fit(195, WIDE)),
-        size=WIDE,
+        camera=(0, 0, MID, 90, 0, 90, fit(100, TALL)),
+        size=TALL,
         colorscheme=INKED,
         caption="Straight down the reading line: every window and the "
                 "whole aperture slot at once.",
     ),
     Shot(
         "power-slot", "display",
-        camera=(POWER_MID, 0, 0, 20, 0, 0, fit(100, DETAIL)),
+        camera=(0, 0, POWER_MID, 90, 0, 90, fit(46, DETAIL)),
         size=DETAIL,
         colorscheme=INKED,
         caption="The answer: the readout under each aperture heading.",
     ),
     Shot(
         "windows", "display",
-        camera=(WINDOWS_MID, 0, 0, 24, 0, 0, fit(85, DETAIL)),
+        camera=(0, 0, WINDOWS_MID, 90, 0, 90, fit(44, DETAIL)),
         size=DETAIL,
         colorscheme=INKED,
         caption="The three setting windows, GN through the third ring.",
     ),
     Shot(
         "exploded", "exploded",
-        camera=(160, 0, 0, 66, 0, 24, fit(350, LANDSCAPE)),
-        size=LANDSCAPE,
+        camera=(0, 0, 150, 80, 0, 68, fit(330, TALL)),
+        size=TALL,
         caption="Five pieces, in the order they thread on.",
     ),
     Shot(
         "section", "section",
-        camera=(MID, 0, 0, 90, 0, 0, fit(195, WIDE)),
-        size=WIDE,
+        camera=(0, 0, MID, 90, 0, 180, fit(100, TALL)),
+        size=TALL,
         colorscheme=INKED,
         caption="Cut away: nesting, clearances, and the spring cavity.",
     ),
     Shot(
         "print-plate", "print",
-        camera=(95, 22, 76, 66, 0, 18, fit(280, LANDSCAPE)),
+        camera=(50, 40, 40, 66, 0, 18, fit_wide(230, LANDSCAPE)),
         size=LANDSCAPE,
         caption="All five pieces as they print, standing on their axes.",
     ),

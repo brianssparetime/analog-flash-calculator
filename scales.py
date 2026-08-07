@@ -281,19 +281,20 @@ UNIT_MARK = {"meters": "m", "feet": "ft"}
 
 
 def window_legend(quantity, units="meters"):
-    """What is engraved beside a window or slot showing `quantity`.
+    """What is engraved either side of a window showing `quantity`.
 
-    The mark inside is bare, so the legend has to carry the unit: a power
-    window shows 4 and means a quarter, a distance window shows 5.6 and
-    means metres or feet depending on how the tool was built.
+    Returns (before, after). The three read as one line around the
+    barrel, with the value in the window between them: GN 32 m, or
+    1/ 4 for a quarter power. The mark inside a window is bare, so the
+    line either side of it has to carry both the name and the unit.
     """
     if quantity == "power":
-        return "POWER 1/"
+        return "1/", ""             # reads 1/4; the value is the divisor
     if quantity == "distance":
-        return "DIST " + UNIT_MARK[units]
+        return "DIST", UNIT_MARK[units]
     if quantity == "gn":
-        return "GN m"
-    return "ISO"
+        return "GN", "m"            # guide numbers are quoted in metres
+    return "ISO", ""
 
 
 class Layout:

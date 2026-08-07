@@ -96,7 +96,12 @@ class Dims(Spec):
         inner_od = 16                   # the tube that runs the whole length
         slip = 0.4                      # diametral clearance, rotating fits
 
-        spigot_wall = 3.2
+        # The scale surface sets the size of the whole tool. Labels run
+        # around the circumference, so each one has to fit inside the arc
+        # of a single detent: at 12 detents that is pi * spigot_od / 12,
+        # and the longest label on the instrument is ISO 1600. Solve the
+        # spigot wall from the surface rather than the other way round.
+        spigot_od = 36
         sleeve_wall = 3.4
         spigot_bore = inner_od + slip
         spigot_od = spigot_bore + 2 * spigot_wall
@@ -110,10 +115,14 @@ class Dims(Spec):
         detent_r = (spigot_bore + spigot_od) / 4
 
         # --- axial --------------------------------------------------------
-        gn_band = 12
-        iso_band = 14
-        dist_band = 20                  # two rows: metres and feet
-        power_col = 6                   # one aperture column
+        # A band only has to be as long as a glyph is tall, plus the
+        # margin that keeps the label off the window's ends. The setting's
+        # name and unit sit either side of the window on the same line,
+        # not above or below it, so they cost arc rather than length.
+        gn_band = 8
+        iso_band = 8
+        dist_band = 12                  # two rows: metres and feet
+        power_col = 3.8                 # one aperture column
         power_margin = 3                # keeps the end labels off the slot ends
         power_band = power_col * {len(LAYOUT.column_labels)} + 2 * power_margin
 
@@ -134,7 +143,7 @@ class Dims(Spec):
         # proud of its recess by one bump height plus clearance, so the
         # nut washer meets the spring first and the cap's rim becomes a
         # hard stop: total axial travel is bounded, and tuned at the nut.
-        washer_od = 32
+        washer_od = 51                  # 2 in fender washer, 1/4 in bore
         spring_bore = 20
         spring_depth = 8                # recess in the cap's end face
         spring_proud = bump_proud + 0.3 # stand-off at rest
@@ -149,7 +158,7 @@ class Dims(Spec):
         overall_len = spring_seat_z + spring_depth
 
         # --- windows ------------------------------------------------------
-        window_arc = 19                 # degrees; see check_windows_frame_labels
+        window_arc = 28                 # degrees; see check_windows_frame_labels
         window_margin = 2               # axial gap to the band's ends
 
         # --- detents ------------------------------------------------------
@@ -167,10 +176,10 @@ class Dims(Spec):
 
         # --- text ---------------------------------------------------------
         engrave = 0.45
-        scale_font = 3.2
-        dist_font = 2.9
-        power_font = 2.4
-        legend_font = 2.8
+        scale_font = 2.7
+        dist_font = 2.5
+        power_font = 2.05
+        legend_font = 2.4
 
         # --- rules --------------------------------------------------------
         bolt_d, inner_od, slip, tip_gap, seam_gap > 0

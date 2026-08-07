@@ -62,9 +62,15 @@ POSE = dict(scales.ALIGN)
 EXPLODE_STEP = 55.0
 
 
-def lay_down(node):
-    """Lay a Z-axis assembly along +X with its reading line facing +Z."""
-    return node.rotate([0, 90, 0]).rotate([180, 0, 0])
+def stand_up(node):
+    """Turn the reading line to face +X, leaving the axis along +Z.
+
+    The instrument is held upright and read across, so the posed views
+    stand it on end. `_posed` already turns the reading line to +X, so
+    this only has to leave the assembly alone: a camera on +X sees every
+    window and the slot stacked up the near face, labels level.
+    """
+    return node
 
 
 class AnalogFlashCalculator(Design):
@@ -144,7 +150,7 @@ class AnalogFlashCalculator(Design):
         """
         inner, gn, iso, dist, cap = self._posed()
         step = spread * EXPLODE_STEP
-        return lay_down(union(
+        return stand_up(union(
             inner,
             gn.up(step),
             iso.up(2 * step),

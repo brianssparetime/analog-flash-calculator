@@ -7,15 +7,16 @@ behind its own window, and the long slot in the fourth gives the answer.
 
 Dial in the flash's guide number, the film speed, and the power the flash
 is set to, and the slot shows how far that flash reaches at every
-aperture from f/2 to f/22 at once.
+aperture from f/2 to f/22 at once. It is held upright and read down the
+near face, so every label runs around the barrel rather than along it.
 
 <p align="center">
-  <img src="rendered_img/hero.png" alt="The assembled calculator: four rings on a bolt, with the readout slot running along the barrel" width="640">
+  <img src="rendered_img/hero.png" alt="The assembled calculator standing on end: three setting windows and the readout slot stacked up the near face" width="480">
 </p>
 
-*The whole instrument is 122 x 30 mm. The long slot reads the answer
-under its aperture headings, and every seam between segments is a
-setting.*
+*The whole instrument is 87 x 43 mm. It stands on end and reads down one
+face: guide number, film speed and power in their windows, then the slot
+giving the distance reached at each aperture. Every seam is a setting.*
 
 I made [a paper one](https://www.brianssparetime.com/posts/im-learning-to-use-a-flash-on-my-analog-camera-so-i-made-an-analog-fla/)
 a few years ago, wrapped around a dowel, and the suggestion I got then
@@ -56,6 +57,11 @@ of the barrel. Away from there, roll the tool in your hand to bring each
 window into view. In practice that matters little: the guide number gets
 set once per flash, the film speed once per roll, and only the third ring
 moves between shots.
+
+A window with nothing to show carries an arrow rather than a blank, since
+every scale is shorter than the twelve detents around the tool. It points
+toward the nearer end of its scale, so turning that way brings the marks
+back into view.
 
 ## How it works
 
@@ -127,7 +133,7 @@ the windows need nothing more than a short bridge across the top.
 Print them bumps-up, as modelled. A dimple opening downward is a 57
 degree overhang and prints clean, while a dome pointing downward sags.
 
-- The inner tube is a 16 mm column standing 111 mm tall. Use a brim.
+- The inner tube is a 16 mm column standing 75 mm tall. Use a brim.
 - Thinnest wall is 3.4 mm, leaving 2.95 mm under an engraving beside a
   window.
 - Running fits carry 0.2 mm of radial clearance. If your printer runs
@@ -137,13 +143,13 @@ degree overhang and prints clean, while a dome pointing downward sags.
 
 ## Assembly
 
-Besides the printed parts you need one 1/4-20 bolt, 5 1/2 inches and
-**fully threaded**, since a part-threaded one has too long a plain shank
-for the nut to reach. Add one nut, two 1/4 inch fender washers of 32 mm
-outside diameter, and one compression spring about 16 mm across that
-seats in a 20 mm bore, stands a millimetre proud of it, and compresses
-past that without going solid. Both washers have to be wider than the
-30 mm body, so they cap the ends rather than drop into them.
+Besides the printed parts you need one 1/4-20 bolt, 4 inches and **fully
+threaded**, since a part-threaded one has too long a plain shank for the
+nut to reach. Add one nut, two 1/4 inch fender washers of 2 inch outside
+diameter, and one compression spring about 16 mm across that seats in a
+20 mm bore, stands a millimetre proud of it, and compresses past that
+without going solid. Both washers have to be wider than the 43 mm body,
+so they cap the ends rather than drop into them.
 
 Everything threads on from the nut end, in order.
 

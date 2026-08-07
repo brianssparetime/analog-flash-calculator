@@ -16,13 +16,15 @@ Label extents are measured off the real text geometry rather than
 estimated, so the numbers here are the ones that get printed.
 """
 
+import math
+
 from scadwright import bbox
 
 import scales
 from dims import LAYOUT, Dims as D
 from parts import (
-    B0, B1, B2, B3, B4, FOOT_ROW, METRE_ROW, DistRing, EndCap, GnRing,
-    InnerTube, IsoRing, engrave_text,
+    B0, B1, B2, B3, B4, DistRing, EndCap, GnRing, InnerTube, IsoRing,
+    engrave_text, window_rows,
 )
 from scales import (
     APERTURES, DISTANCES_FT, DISTANCES_M, GUIDE_NUMBERS, ISOS, POWERS,
@@ -33,6 +35,23 @@ def _label_span(**kwargs):
     """Axial extent (z_min, z_max) of a label as it will be cut."""
     bb = bbox(engrave_text(**kwargs))
     return bb.min[2], bb.max[2]
+
+
+def _label_arc_deg(od, label, size):
+    """How much of the circumference a label takes, in degrees.
+
+    The glyphs lie on the surface, so a point at angle t sits at
+    y = r sin t. Measuring the cut geometry rather than guessing from the
+    font size catches proportional spacing, which varies the width of a
+    label by more than a millimetre between "11" and "3200".
+    """
+    bb = bbox(engrave_text(od=od, z=0, label=label, angle=0, size=size))
+    r = od / 2
+    return 2 * math.degrees(math.asin(max(abs(bb.min[1]), abs(bb.max[1])) / r))
+
+
+def _label_arc_mm(od, label, size):
+    return math.radians(_label_arc_deg(od, label, size)) * od / 2
 
 
 def _assert_inside(span, win, what):
@@ -65,15 +84,15 @@ def check_labels_fit_windows():
     # out exactly as `IsoRing.scale` cuts it: two rows for distance, one
     # for anything else.
     third_win = (B2 + D.window_margin, B3 - D.window_margin)
-    span = B3 - B2
     if LAYOUT.third == "distance":
-        rows = ((DISTANCES_M, METRE_ROW, " m"), (DISTANCES_FT, FOOT_ROW, " ft"))
+        metre_z, foot_z = window_rows(B2, B3)
+        rows = ((DISTANCES_M, metre_z, " m"), (DISTANCES_FT, foot_z, " ft"))
     else:
-        rows = ((LAYOUT.third_marks, 0.5, ""),)
-    for labels, frac, unit in rows:
+        rows = ((LAYOUT.third_marks, sum(window_rows(B2, B3)) / 2, ""),)
+    for labels, z, unit in rows:
         for t, label in enumerate(labels):
             _assert_inside(
-                _label_span(od=D.spigot_od, z=B2 + span * frac, label=label,
+                _label_span(od=D.spigot_od, z=z, label=label,
                             angle=LAYOUT.setting_angle("third", t), size=D.dist_font),
                 third_win, f"{LAYOUT.third} {label}{unit}")
 
@@ -120,29 +139,40 @@ def check_power_columns_clear():
     return widest, worst
 
 
-def check_scales_fit_circumference():
-    """One detent's worth of arc must hold a glyph without crowding.
+def _longest(labels):
+    return max(labels, key=len)
 
-    Labels run along the axis, so what has to fit around the cylinder is
-    the glyph height, not the label's length. That is what lets the
-    inner segment stay slim even though it carries the longest
-    labels on the tool.
+
+def _scales_to_measure():
+    """Every scale on the tool, with its longest label and its font."""
+    return (
+        ("GN", _longest(GUIDE_NUMBERS), D.scale_font),
+        ("ISO", _longest(ISOS), D.scale_font),
+        ("third", _longest(LAYOUT.third_marks), D.dist_font),
+        ("readout", _longest(LAYOUT.value_marks), D.power_font),
+    )
+
+
+def check_scales_fit_circumference():
+    """One detent's worth of arc must hold a whole label.
+
+    Labels run around the circumference, so what has to fit between one
+    detent and the next is the label's full length, not a glyph's height.
+    This is the constraint that sets the diameter of the instrument: the
+    longest label on any scale, at the detent pitch, decides how big
+    around the scale surface has to be.
     """
+    arc = math.pi * D.spigot_od / scales.DETENTS
     tightest = None
-    for what, od, font in (
-        ("GN", D.spigot_od, D.scale_font),
-        ("power", D.spigot_od, D.power_font),
-        ("ISO", D.spigot_od, D.scale_font),
-        ("distance", D.spigot_od, D.dist_font),
-    ):
-        import math
-        arc = math.pi * od / scales.DETENTS
-        assert arc > font * 1.4, (
-            f"{what} scale: one detent is {arc:.2f} mm of arc at OD {od}, "
-            f"too tight for {font} mm glyphs"
+    for what, label, font in _scales_to_measure():
+        used = _label_arc_mm(D.spigot_od, label, font)
+        assert used < arc, (
+            f"{what} scale: '{label}' is {used:.2f} mm around, and one "
+            f"detent is only {arc:.2f} mm of arc at OD {D.spigot_od:.1f}. "
+            f"It would run into its neighbour."
         )
-        if tightest is None or arc - font < tightest[0]:
-            tightest = (arc - font, what, arc)
+        if tightest is None or arc - used < tightest[0]:
+            tightest = (arc - used, what, arc)
     return tightest
 
 
@@ -150,26 +180,17 @@ def check_windows_frame_labels():
     """A window must be wider than its label and narrower than its
     neighbour.
 
-    Labels run along the axis, so what a window has to clear
-    circumferentially is the glyph height -- and the glyph sits on the
-    scale surface, at a smaller radius than the window it is seen
-    through, so it subtends a wider angle than its height suggests. Too
-    narrow and the label is clipped at an angle; too wide and the next
-    detent's label creeps into view alongside the right one.
+    Labels run around the circumference, so a window has to clear the
+    whole length of one. Too narrow and the label is clipped at its ends;
+    too wide and the next detent's label creeps into view beside the
+    right one, which would show two readings at once.
     """
-    from math import degrees
-
     tightest = None
-    for what, scale_od, font in (
-        ("GN", D.spigot_od, D.scale_font),
-        ("power", D.spigot_od, D.power_font),
-        ("ISO", D.spigot_od, D.scale_font),
-        ("distance", D.spigot_od, D.dist_font),
-    ):
-        label_arc = degrees(font / (scale_od / 2))
+    for what, label, font in _scales_to_measure():
+        label_arc = _label_arc_deg(D.spigot_od, label, font)
         assert D.window_arc > label_arc, (
-            f"{what} label subtends {label_arc:.1f} deg on a "
-            f"{scale_od:.0f} mm surface, wider than the "
+            f"{what}: '{label}' subtends {label_arc:.1f} deg on a "
+            f"{D.spigot_od:.0f} mm surface, wider than the "
             f"{D.window_arc:.0f} deg window: it will be clipped"
         )
         # The next detent's label starts half its width off the neighbour.
