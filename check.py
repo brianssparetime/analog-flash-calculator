@@ -354,6 +354,38 @@ def check_threading():
     return min(bore - over for _, bore, over in passes) / 2
 
 
+def check_key_ends_up_inside_the_cap():
+    """Assembled, the key may sit in the cap and nowhere else.
+
+    The cap is keyed so the two turn as one body, which is what makes the
+    readout mean anything. Every other segment turns, and each carries a
+    channel for the key on its own window meridian. Those channels exist
+    to let a ring thread past the key during assembly and are empty once
+    it is together. If the key ever reached a turning ring, that ring
+    could only sit at the one angle where its channel lined up, and the
+    setting under it would be stuck there.
+    """
+    key0, key1 = D.inner_end_z - D.key_len, D.inner_end_z
+    turning = [
+        ("gn ring", D.gn_z0, D.dist_z0),
+        ("iso ring", D.iso_z0, D.power_z0),
+        ("dist ring", D.dist_z0, D.power_z1),
+    ]
+    tightest = None
+    for what, z0, z1 in turning:
+        clear = key0 - z1
+        assert clear > 0, (
+            f"the key reaches {-clear:.2f} mm into the {what}, which turns: "
+            f"it would lock that ring to the channel's meridian"
+        )
+        if tightest is None or clear < tightest[0]:
+            tightest = (clear, what)
+    # And it must actually engage the cap, or the two are not coupled.
+    assert key0 >= D.power_z1 + D.cap_web_t, "the key starts inside the slot"
+    assert key1 <= D.overall_len, "the key runs out of the cap's far end"
+    return tightest
+
+
 def check_key_passes_every_bore():
     """The inner tube's key has to get through every ring on the way down.
 
@@ -453,8 +485,12 @@ if __name__ == "__main__":
           f"{off:.2f} mm of {D.power_col:.0f}")
 
     key_proud, key_clear = check_key_passes_every_bore()
-    print(f"keyway        the key stands {key_proud:.2f} mm proud of every "
+    print(f"keyway         the key stands {key_proud:.2f} mm proud of every "
           f"bore; channels clear it by {key_clear:.2f} mm")
+
+    gap, nearest = check_key_ends_up_inside_the_cap()
+    print(f"key seat       assembled, the key sits in the cap alone; "
+          f"{gap:.1f} mm clear of the {nearest}")
 
     clr = check_threading()
     print(f"threading      every segment goes on; tightest {clr:.2f} mm per side")
