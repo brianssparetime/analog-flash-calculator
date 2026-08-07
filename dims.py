@@ -47,24 +47,26 @@ so a bump can climb out of its dimple without the assembly stretching.
 
 The end cap slides on its key rather than seating against a shoulder, so
 the inner tube cannot take the bolt load in parallel and leave the rings
-loose. The spring counterbore is *wider* than the washer, so the washer
-descends into it and bears on the spring alone. A counterbore narrower
-than the washer lets the washer bottom on its rim and bypass the spring
-entirely, which is a silent failure: everything looks assembled and
-nothing clicks.
+loose. The washer is *wider* than the spring counterbore, so it spans the
+recess and meets the spring standing `spring_proud` above the rim. The
+rim then becomes a hard stop that bounds travel, tuned at the nut. A
+spring sunk flush would let the washer bottom on that rim and bypass the
+spring entirely, which is a silent failure: everything looks assembled
+and nothing clicks.
 """
 
 from scadwright import Spec, arg
 
 from scales import DETENTS, LAYOUTS
 
-# Which quantity the long slot reads out. `power` is the original paper
-# prototype: power needed at every aperture. `aperture` swaps the roles of
-# power and distance, so the slot shows the aperture usable at every
-# distance -- worth having because distance is what changes shot to shot,
-# and this way every distance is visible without turning anything.
-LAYOUT = LAYOUTS[arg("readout", default="power", type=str,
-                     help="main readout: power | aperture")]
+# Which quantity the long slot reads out. `distance` is the default: set
+# an aperture and a power, and the slot shows how far the flash reaches at
+# every aperture, which is the useful way round because distance is what
+# changes shot to shot and this way every distance is visible without
+# turning anything. `power` swaps the roles of distance and power, giving
+# the original paper prototype: the power needed at every aperture.
+LAYOUT = LAYOUTS[arg("readout", default="distance", type=str,
+                     help="main readout: distance | power")]
 
 # Counts, not measurements, so they stay out of the Spec: a `?`-typed int
 # there would make every dimension instance-only to read.

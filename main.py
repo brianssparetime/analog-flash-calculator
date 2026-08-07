@@ -2,7 +2,7 @@
 
     scadwright build main.py                        # print plate (default)
     scadwright build main.py --variant=display      # assembled, one setting
-    scadwright build main.py --readout=aperture     # f/stop per distance
+    scadwright build main.py --readout=distance     # distance per f/stop
     scadwright build main.py --variant=exploded     # pulled apart along the axis
     scadwright build main.py --variant=section      # cut away, to check fits
     scadwright morph  main.py assemble out.apng     # the stack coming together
@@ -13,8 +13,11 @@ Turn three rings, read every aperture at once:
 
     1. GN ring    -> the flash's guide number
     2. ISO ring   -> the film speed
-    3. DIST ring  -> the flash-to-subject distance
-    then read the power needed under each aperture in the long slot.
+    3. POWER ring -> the flash's power setting
+    then read the distance reached under each aperture in the long slot.
+
+With `--readout=power` the third ring sets the distance instead, and the
+slot reads the power each aperture needs.
 
 Orientation of the posed variants
 ---------------------------------
@@ -52,10 +55,10 @@ from parts import DistRing, EndCap, GnRing, InnerTube, IsoRing
 #
 # Chosen because it is the setting that photographs best, and it is worth
 # saying why. Two things fall out of it at once. Every aperture column is
-# populated, so the slot reads 1/128 through 1/1 across the full f/2 to
-# f/22 span. And all four windows land on the same meridian, so the whole
-# instrument can be read down one line -- which only happens when the ISO
-# and distance rings are both at their first mark.
+# populated, so the slot is full across the whole f/2 to f/22 span. And
+# all four windows land on the same meridian, so the whole instrument can
+# be read down one line, which only happens when the ISO ring and the
+# third ring are both at their first mark.
 POSE = dict(
     gn=scales.GUIDE_NUMBERS.index("45"),
     iso=scales.ISOS.index("25"),
@@ -115,10 +118,10 @@ class AnalogFlashCalculator(Design):
     def _hardware(self, spread):
         """Stand-in 1/4 inch bolt, washers and spring.
 
-        The spring loads into the cavity in the inner segment's end face,
-        under the bolt head, which puts it in series with the whole
-        stack. The end washer is a fender washer: it bears on the dist
-        ring's tail face, and an ordinary one would drop into the bore.
+        The spring seats in the end cap's recess at the nut end, which
+        puts it in series with the whole stack. The washer above it is a
+        fender washer: it spans the recess and bears on the proud spring,
+        where an ordinary one would drop into the bore.
 
         `spread` draws the two ends apart for the exploded stage. What is
         yielded, and in what order, never varies with it.

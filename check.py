@@ -21,8 +21,8 @@ from scadwright import bbox
 import scales
 from dims import LAYOUT, Dims as D
 from parts import (
-    B0, B1, B2, B3, B4, DistRing, EndCap, GnRing, InnerTube, IsoRing,
-    engrave_text,
+    B0, B1, B2, B3, B4, FOOT_ROW, METRE_ROW, DistRing, EndCap, GnRing,
+    InnerTube, IsoRing, engrave_text,
 )
 from scales import (
     APERTURES, DISTANCES_FT, DISTANCES_M, GUIDE_NUMBERS, ISOS, POWERS,
@@ -62,16 +62,23 @@ def check_labels_fit_windows():
                         angle=iso_scale_angle(i), size=D.scale_font),
             iso_win, f"ISO {label}")
 
-    dist_win = (B2 + D.window_margin, B3 - D.window_margin)
-    for d, (m_label, ft_label) in enumerate(zip(DISTANCES_M, DISTANCES_FT)):
-        angle = distance_scale_angle(d)
-        for label, frac, unit in ((m_label, 0.29, "m"), (ft_label, 0.71, "ft")):
+    # The third band carries whichever setting the layout puts there, laid
+    # out exactly as `IsoRing.scale` cuts it: two rows for distance, one
+    # for anything else.
+    third_win = (B2 + D.window_margin, B3 - D.window_margin)
+    span = B3 - B2
+    if LAYOUT.third == "distance":
+        rows = ((DISTANCES_M, METRE_ROW, " m"), (DISTANCES_FT, FOOT_ROW, " ft"))
+    else:
+        rows = ((LAYOUT.third_marks, 0.5, ""),)
+    for labels, frac, unit in rows:
+        for t, label in enumerate(labels):
             _assert_inside(
-                _label_span(od=D.spigot_od, z=B2 + (B3 - B2) * frac,
-                            label=label, angle=angle, size=D.dist_font),
-                dist_win, f"distance {label} {unit}")
+                _label_span(od=D.spigot_od, z=B2 + span * frac, label=label,
+                            angle=distance_scale_angle(t), size=D.dist_font),
+                third_win, f"{LAYOUT.third} {label}{unit}")
 
-    power_win = (B3 + D.power_margin / 2,
+    value_win = (B3 + D.power_margin / 2,
                  B4 - D.power_margin / 2)
     for a in range(len(APERTURES)):
         col_mid = B3 + D.power_margin + (a + 0.5) * D.power_col
@@ -79,20 +86,20 @@ def check_labels_fit_windows():
             _assert_inside(
                 _label_span(od=D.spigot_od, z=col_mid, label=label,
                             angle=power_scale_angle(p, a), size=D.power_font),
-                power_win, f"power {label} at f/{APERTURES[a]}")
+                value_win, f"{LAYOUT.value} {label} at f/{APERTURES[a]}")
 
 
 def check_power_columns_clear():
     """Adjacent aperture columns must not run into one another.
 
-    At any one angle every column carries a label -- the next column over
-    shows one stop less power -- so the columns are neighbours in z at the
-    same angle, and the widest label decides the column pitch.
+    At any one angle every column carries a label, the next column over
+    showing the neighbouring mark, so the columns are neighbours in z at
+    the same angle and the widest label decides the column pitch.
     """
     widest = 0.0
     worst = None
     for a in range(len(APERTURES) - 1):
-        for p in range(1, len(POWERS)):
+        for p in range(1, len(LAYOUT.value_marks)):
             angle = power_scale_angle(p, a)
             here = _label_span(
                 od=D.spigot_od,
@@ -104,11 +111,12 @@ def check_power_columns_clear():
                 label=LAYOUT.value_marks[p - 1], angle=angle, size=D.power_font)
             gap = nxt[0] - here[1]
             assert gap > 0, (
-                f"f/{APERTURES[a]} {POWERS[p]} overlaps "
-                f"f/{APERTURES[a + 1]} {POWERS[p - 1]} by {-gap:.2f} mm"
+                f"f/{APERTURES[a]} {LAYOUT.value_labels[p]} overlaps "
+                f"f/{APERTURES[a + 1]} {LAYOUT.value_labels[p - 1]} "
+                f"by {-gap:.2f} mm"
             )
             if worst is None or gap < worst[0]:
-                worst = (gap, APERTURES[a], POWERS[p])
+                worst = (gap, APERTURES[a], LAYOUT.value_labels[p])
             widest = max(widest, here[1] - here[0])
     return widest, worst
 
@@ -367,7 +375,7 @@ if __name__ == "__main__":
 
     widest, worst = check_power_columns_clear()
     gap, ap, pw = worst
-    print(f"power columns  clear; widest label {widest:.2f} mm in a "
+    print(f"slot columns   clear; widest label {widest:.2f} mm in a "
           f"{D.power_col:.1f} mm pitch")
     print(f"               tightest gap {gap:.2f} mm "
           f"(f/{ap} {pw} to its neighbour)")

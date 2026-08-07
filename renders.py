@@ -118,7 +118,7 @@ SHOTS = [
         camera=(POWER_MID, 0, 0, 20, 0, 0, fit(100, DETAIL)),
         size=DETAIL,
         colorscheme=INKED,
-        caption="The answer: power needed under each aperture heading.",
+        caption="The answer: the readout under each aperture heading.",
     ),
     Shot(
         "settings-line", "settings",
@@ -132,7 +132,7 @@ SHOTS = [
         camera=(WINDOWS_MID, 0, 0, 24, 0, 0, fit(85, DETAIL)),
         size=DETAIL,
         colorscheme=INKED,
-        caption="The three setting windows, GN through DIST.",
+        caption="The three setting windows, GN through the third ring.",
     ),
     Shot(
         "three-quarter-rear", "settings",
