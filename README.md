@@ -11,7 +11,7 @@ aperture from f/2 to f/22 at once. It is held upright and read down the
 near face, so every label runs around the barrel rather than along it.
 
 <p align="center">
-  <img src="rendered_img/hero.png" alt="The assembled calculator standing on end: three setting windows and the readout slot stacked up the near face" width="480">
+  <img src="rendered_img/hero.png?v=2" alt="The assembled calculator standing on end: three setting windows and the readout slot stacked up the near face" width="480">
 </p>
 
 *The whole instrument is 87 x 43 mm. It stands on end and reads down one
@@ -133,6 +133,14 @@ the windows need nothing more than a short bridge across the top.
 Print them bumps-up, as modelled. A dimple opening downward is a 57
 degree overhang and prints clean, while a dome pointing downward sags.
 
+<p align="center">
+  <img src="rendered_img/print-plate.png" alt="The five printed parts laid out on the bed, each standing on its axis" width="640">
+</p>
+
+*The whole tool is one plate. Left to right: the inner tube, the GN ring,
+the ISO ring, the third ring carrying the readout table, and the end cap.
+Each stands on the axis it was engraved around.*
+
 - The inner tube is a 16 mm column standing 75 mm tall. Use a brim.
 - Thinnest wall is 3.4 mm, leaving 2.95 mm under an engraving beside a
   window.
@@ -150,6 +158,20 @@ diameter, and one compression spring about 16 mm across that seats in a
 20 mm bore, stands a millimetre proud of it, and compresses past that
 without going solid. Both washers have to be wider than the 43 mm body,
 so they cap the ends rather than drop into them.
+
+<p align="center">
+  <img src="rendered_img/exploded.png" alt="The five parts drawn apart along the bolt in the order they assemble" width="640">
+</p>
+
+*Drawn apart along the axis, in the order they go on. The inner tube runs
+the whole length; the cap keys onto its far end once the three rings are
+aboard.*
+
+<p align="center">
+  <img src="rendered_img/assembly.apng" alt="Animation of the five parts closing up into the assembled tool" width="360">
+</p>
+
+*The same five pieces closing up.*
 
 Everything threads on from the nut end, in order.
 

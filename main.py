@@ -22,10 +22,10 @@ slot reads the power each aperture needs.
 
 Orientation of the posed variants
 ---------------------------------
-Assembled views lie the instrument along +X with its reading line facing
-+Z, so a camera looking down sees the whole line at once and the engraved
-text reads left to right. `_posed` also rotates the whole assembly so that
-line always lands on the same meridian whatever setting is on show, which
+Assembled views stand the instrument on end with its reading line facing
++X, which is how it is held: labels run around the barrel, so they read
+level only with the axis upright. `_posed` turns the whole assembly so
+that line lands on the same meridian whatever setting is on show, which
 keeps the camera positions in `renders.py` valid across settings.
 
 Print orientation
@@ -37,7 +37,7 @@ at the top, and engraved text on a vertical wall comes out crisp.
 Which end goes down is decided by the detents. A spherical dimple opening
 downward loses about 0.13 mm of radius per 0.2 mm layer -- a 57 degree
 overhang, which prints clean. A dome pointing downward does not. So every
-segment is oriented bumps-up, which all four are as modelled.
+segment is oriented bumps-up, which all five are as modelled.
 """
 
 from scadwright import morph
@@ -59,7 +59,7 @@ POSE = dict(scales.ALIGN)
 
 # How far apart the exploded view pulls the segments, along the axis. The
 # morph animates this closing up, which is the order they assemble in.
-EXPLODE_STEP = 55.0
+EXPLODE_STEP = 30.0
 
 
 def stand_up(node):
@@ -124,8 +124,8 @@ class AnalogFlashCalculator(Design):
         `spread` draws the two ends apart for the exploded stage. What is
         yielded, and in what order, never varies with it.
         """
-        lead = -spread * 55                       # head end, off to the left
-        tail = spread * (3 * EXPLODE_STEP + 45)   # nut end, off to the right
+        lead = -spread * 30                       # head end, below
+        tail = spread * (3 * EXPLODE_STEP + 20)   # nut end, above
         head_z = -12.0 + lead
 
         yield cylinder(h=D.overall_len + 20, d=6.35).up(head_z).color("silver")

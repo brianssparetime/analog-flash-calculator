@@ -136,7 +136,7 @@ SHOTS = [
     ),
     Shot(
         "exploded", "exploded",
-        camera=(0, 0, 150, 80, 0, 68, fit(330, TALL)),
+        camera=(0, 0, 80, 82, 0, 80, fit(254, TALL)),
         size=TALL,
         caption="Five pieces, in the order they thread on.",
     ),
@@ -149,7 +149,7 @@ SHOTS = [
     ),
     Shot(
         "print-plate", "print",
-        camera=(50, 40, 40, 66, 0, 18, fit_wide(230, LANDSCAPE)),
+        camera=(124, 22, 38, 72, 0, 18, fit_wide(270, LANDSCAPE)),
         size=LANDSCAPE,
         caption="All five pieces as they print, standing on their axes.",
     ),
