@@ -103,38 +103,32 @@ def power_index(*, gn, iso, aperture, distance):
 # detents relative to the core, so the power column for aperture `a`
 # shows p = g + OFFSET + i - a - d, which is `power_index` above.
 
-def gn_scale_angle(g):
-    return g * DETENT_ANGLE
+# --- the setting the instrument lines up at -------------------------------
+#
+# Where each scale's zero sits is free: shifting one by a whole detent
+# moves that ring's window round the circumference without touching any
+# reading. Engraving every scale relative to the setting below, rather
+# than to its own first mark, brings all three setting windows onto the
+# readout slot's meridian at that setting, so a single view shows the
+# whole tool being read. Every other setting scatters them as before.
+#
+# Change these three to line up somewhere else. GN and ISO are labels off
+# their own scales, so a typo fails at import rather than printing wrong.
+# The third is an index, since the layout decides what sits there: 0 is
+# the first mark, full power or 1 m.
+ALIGN_GN = "32"
+ALIGN_ISO = "400"
+ALIGN_THIRD = 0
 
+ALIGN = {
+    "gn": GUIDE_NUMBERS.index(ALIGN_GN),
+    "iso": ISOS.index(ALIGN_ISO),
+    "third": ALIGN_THIRD,
+}
 
-def iso_scale_angle(i):
-    return i * DETENT_ANGLE
-
-
-def distance_scale_angle(d):
-    return -d * DETENT_ANGLE
-
-
-def power_scale_angle(p, a):
-    # Negated relative to the setting scales because the readout pair is
-    # the other way round: the table rides the outermost moving segment
-    # and the window sits on the end cap, which is fixed to the inner
-    # tube. Reversing which member carries the window reverses the sign
-    # and nothing else.
-    return -(p + a - OFFSET) * DETENT_ANGLE
-
-
-def ring_rotations(*, gn, iso, distance):
-    """World rotations (degrees) of the four bodies for one setting.
-
-    The core is the reference at 0. Returned in radial order: core,
-    gn ring, iso ring, dist ring.
-    """
-    core = 0.0
-    gn_ring = core + gn_scale_angle(gn)
-    iso_ring = gn_ring + iso_scale_angle(iso)
-    dist_ring = iso_ring + distance_scale_angle(distance)
-    return core, gn_ring, iso_ring, dist_ring
+# The table has to move with them, by the sum of what the three settings
+# moved, or the slot would show the wrong cell.
+TABLE_PHASE = ALIGN["third"] - ALIGN["gn"] - ALIGN["iso"]
 
 
 def reading(*, gn, iso, distance):
@@ -283,6 +277,24 @@ _LABELS = {
 # What gets engraved, where that differs from the canonical label.
 _MARKS = dict(_LABELS, power=POWER_MARKS)
 
+UNIT_MARK = {"meters": "m", "feet": "ft"}
+
+
+def window_legend(quantity, units="meters"):
+    """What is engraved beside a window or slot showing `quantity`.
+
+    The mark inside is bare, so the legend has to carry the unit: a power
+    window shows 4 and means a quarter, a distance window shows 5.6 and
+    means metres or feet depending on how the tool was built.
+    """
+    if quantity == "power":
+        return "POWER 1/"
+    if quantity == "distance":
+        return "DIST " + UNIT_MARK[units]
+    if quantity == "gn":
+        return "GN m"
+    return "ISO"
+
 
 class Layout:
     """One assignment of quantities to the instrument's four interfaces.
@@ -293,13 +305,16 @@ class Layout:
     two settings.
     """
 
-    def __init__(self, name, third, column, value, legend, heading):
+    def __init__(self, name, third, column, value, heading):
         self.name = name
         self.third = third
         self.column = column
         self.value = value
-        self.legend = legend        # engraved beside the slot
         self.heading = heading      # engraved beside the column marks
+        # Which distance scale the slot is labelled in. The two are the
+        # same detents relabelled, so this changes no geometry. Set once
+        # from the command line, in `dims`.
+        self.units = "meters"
 
         cv, cc = _COEFF[value], _COEFF[column]
         # Sign of each setting scale, so the three relative rotations
@@ -323,12 +338,21 @@ class Layout:
         return _LABELS[self.column]
 
     @property
+    def legend(self):
+        """Engraved beside the slot."""
+        return window_legend(self.value, self.units)
+
+    @property
     def value_labels(self):
+        if self.value == "distance" and self.units == "feet":
+            return DISTANCES_FT
         return _LABELS[self.value]
 
     @property
     def value_marks(self):
         """What is engraved in the table, which may be shorter."""
+        if self.value == "distance" and self.units == "feet":
+            return DISTANCES_FT
         return _MARKS[self.value]
 
     @property
@@ -338,7 +362,7 @@ class Layout:
     def setting_angle(self, which, index):
         sign = {"gn": self.gn_sign, "iso": self.iso_sign,
                 "third": self.third_sign}[which]
-        return sign * index * DETENT_ANGLE
+        return sign * (index - ALIGN[which]) * DETENT_ANGLE
 
     def table_angle(self, value_index, column_index):
         """Where a table entry is engraved on the dist ring's spigot.
@@ -349,7 +373,8 @@ class Layout:
         """
         return -(value_index
                  + self.column_sign * column_index
-                 + self.constant) * DETENT_ANGLE
+                 + self.constant
+                 + TABLE_PHASE) * DETENT_ANGLE
 
     def readout(self, *, gn, iso, third, column):
         """Index of the value shown in `column`, or None if off scale."""
@@ -375,7 +400,7 @@ class Layout:
 # Power needed at each aperture. The original paper prototype's layout.
 POWER_LAYOUT = Layout(
     "power", third="distance", column="aperture", value="power",
-    legend="POWER 1/", heading="f/",
+    heading="f/",
 )
 
 # Working distance at each aperture. Distance is what changes shot to
@@ -388,7 +413,7 @@ POWER_LAYOUT = Layout(
 # piece either way, so only two of the five printed parts differ.
 DISTANCE_LAYOUT = Layout(
     "distance", third="power", column="aperture", value="distance",
-    legend="DIST m", heading="f/",
+    heading="f/",
 )
 
 LAYOUTS = {l.name: l for l in (POWER_LAYOUT, DISTANCE_LAYOUT)}

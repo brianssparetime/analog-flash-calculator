@@ -26,7 +26,6 @@ from parts import (
 )
 from scales import (
     APERTURES, DISTANCES_FT, DISTANCES_M, GUIDE_NUMBERS, ISOS, POWERS,
-    distance_scale_angle, gn_scale_angle, iso_scale_angle, power_scale_angle,
 )
 
 
@@ -52,14 +51,14 @@ def check_labels_fit_windows():
     for g, label in enumerate(GUIDE_NUMBERS):
         _assert_inside(
             _label_span(od=D.spigot_od, z=(B0 + B1) / 2, label=label,
-                        angle=gn_scale_angle(g), size=D.scale_font),
+                        angle=LAYOUT.setting_angle("gn", g), size=D.scale_font),
             gn_win, f"GN {label}")
 
     iso_win = (B1 + D.window_margin, B2 - D.window_margin)
     for i, label in enumerate(ISOS):
         _assert_inside(
             _label_span(od=D.spigot_od, z=(B1 + B2) / 2, label=label,
-                        angle=iso_scale_angle(i), size=D.scale_font),
+                        angle=LAYOUT.setting_angle("iso", i), size=D.scale_font),
             iso_win, f"ISO {label}")
 
     # The third band carries whichever setting the layout puts there, laid
@@ -75,7 +74,7 @@ def check_labels_fit_windows():
         for t, label in enumerate(labels):
             _assert_inside(
                 _label_span(od=D.spigot_od, z=B2 + span * frac, label=label,
-                            angle=distance_scale_angle(t), size=D.dist_font),
+                            angle=LAYOUT.setting_angle("third", t), size=D.dist_font),
                 third_win, f"{LAYOUT.third} {label}{unit}")
 
     value_win = (B3 + D.power_margin / 2,
@@ -85,7 +84,7 @@ def check_labels_fit_windows():
         for p, label in enumerate(LAYOUT.value_marks):
             _assert_inside(
                 _label_span(od=D.spigot_od, z=col_mid, label=label,
-                            angle=power_scale_angle(p, a), size=D.power_font),
+                            angle=LAYOUT.table_angle(p, a), size=D.power_font),
                 value_win, f"{LAYOUT.value} {label} at f/{APERTURES[a]}")
 
 
@@ -100,7 +99,7 @@ def check_power_columns_clear():
     worst = None
     for a in range(len(APERTURES) - 1):
         for p in range(1, len(LAYOUT.value_marks)):
-            angle = power_scale_angle(p, a)
+            angle = LAYOUT.table_angle(p, a)
             here = _label_span(
                 od=D.spigot_od,
                 z=B3 + D.power_margin + (a + 0.5) * D.power_col,

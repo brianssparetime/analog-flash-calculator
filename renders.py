@@ -101,7 +101,7 @@ DETAIL = (1800, 900)
 SHOTS = [
     Shot(
         "hero", "display",
-        camera=(MID, 0, 0, 63, 0, 24, fit(210, LANDSCAPE)),
+        camera=(MID, 0, 0, 63, 0, 38, fit(210, LANDSCAPE)),
         size=LANDSCAPE,
         caption="Three-quarter view of the whole instrument.",
     ),
@@ -121,24 +121,11 @@ SHOTS = [
         caption="The answer: the readout under each aperture heading.",
     ),
     Shot(
-        "settings-line", "settings",
-        camera=(MID, 0, 0, 0, 0, 0, fit(195, WIDE)),
-        size=WIDE,
-        colorscheme=INKED,
-        caption="The other side: the three setting windows in a row.",
-    ),
-    Shot(
-        "windows", "settings",
+        "windows", "display",
         camera=(WINDOWS_MID, 0, 0, 24, 0, 0, fit(85, DETAIL)),
         size=DETAIL,
         colorscheme=INKED,
         caption="The three setting windows, GN through the third ring.",
-    ),
-    Shot(
-        "three-quarter-rear", "settings",
-        camera=(MID, 0, 0, 66, 0, 24, fit(210, LANDSCAPE)),
-        size=LANDSCAPE,
-        caption="Three-quarter view from the settings side.",
     ),
     Shot(
         "exploded", "exploded",

@@ -57,7 +57,7 @@ and nothing clicks.
 
 from scadwright import Spec, arg
 
-from scales import DETENTS, LAYOUTS
+from scales import DETENTS, LAYOUTS, UNIT_MARK
 
 # Which quantity the long slot reads out. `distance` is the default: set
 # an aperture and a power, and the slot shows how far the flash reaches at
@@ -67,6 +67,16 @@ from scales import DETENTS, LAYOUTS
 # the original paper prototype: the power needed at every aperture.
 LAYOUT = LAYOUTS[arg("readout", default="distance", type=str,
                      help="main readout: distance | power")]
+
+# Which distance scale the slot is labelled in. The slot has room for one
+# row per column, so it has to be chosen; the third ring, where distance
+# is a setting rather than the answer, prints both rows and ignores this.
+# Metres and feet mark the same detents, so nothing but the labels moves.
+UNITS = arg("units", default="meters", type=str,
+            help="distance units in the slot: meters | feet")
+if UNITS not in UNIT_MARK:
+    raise ValueError(f"units must be one of {sorted(UNIT_MARK)}, not {UNITS!r}")
+LAYOUT.units = UNITS
 
 # Counts, not measurements, so they stay out of the Spec: a `?`-typed int
 # there would make every dimension instance-only to read.

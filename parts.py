@@ -31,7 +31,9 @@ from scadwright.primitives import cube, cylinder, sphere
 from scadwright.shapes import PieSlice, Tube
 
 from dims import DETENT_BUMPS, DETENT_DIVOTS, LAYOUT, Dims
-from scales import DISTANCES_FT, DISTANCES_M, GUIDE_NUMBERS, ISOS
+from scales import (
+    DISTANCES_FT, DISTANCES_M, GUIDE_NUMBERS, ISOS, window_legend,
+)
 
 D = Dims
 EPS = 0.01
@@ -268,7 +270,7 @@ class GnRing(_SettingRing):
 
     READS = (B0, B1)
     CARRIES = (B1, B2)
-    LEGEND = "GN"
+    LEGEND = window_legend("gn")        # guide numbers are quoted in metres
 
     def scale(self):
         for i, label in enumerate(ISOS):
@@ -321,8 +323,12 @@ class DistRing(_SettingRing):
     CARRIES = (B3, B4)
     @property
     def LEGEND(self):
-        # Its window shows the third setting, which the layout names.
-        return "DIST" if LAYOUT.third == "distance" else "POWER"
+        # Its window shows the third setting, which the layout names. When
+        # that is distance the two rows carry their own unit marks, so the
+        # legend stays bare.
+        if LAYOUT.third == "distance":
+            return "DIST"
+        return window_legend(LAYOUT.third, LAYOUT.units)
 
     def window_legends(self):
         """Units above the window, in the order the rows appear.

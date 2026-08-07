@@ -48,12 +48,14 @@ To change a setting, twist the two segments either side of its seam
 against each other. The spring lets the bumps cam out of their dimples,
 so nothing has to be pulled apart first.
 
-The windows do not sit in a row around the circumference, since each one
-rides on the segment carrying it and those have to turn relative to each
-other to hold a setting. Roll the tool in your hand to bring each into
-view. In practice that matters little: the guide number gets set once per
-flash, the film speed once per roll, and only the third ring moves
-between shots.
+The windows only sit in a row for one setting, since each rides on the
+segment carrying it and those have to turn relative to each other to hold
+a setting. The scales are engraved so that the row falls at GN 32, ISO
+400, full power, where every window and the slot line up along one side
+of the barrel. Away from there, roll the tool in your hand to bring each
+window into view. In practice that matters little: the guide number gets
+set once per flash, the film speed once per roll, and only the third ring
+moves between shots.
 
 ## How it works
 
@@ -99,15 +101,22 @@ python3 -m venv .venv
 .venv/bin/pip install "scadwright[curved-text]"     # proportional glyph spacing
 
 .venv/bin/scadwright build main.py                   # print plate, into out/
-.venv/bin/scadwright build main.py --variant=display
-.venv/bin/scadwright build main.py --variant=exploded
-.venv/bin/scadwright build main.py --variant=section
+.venv/bin/scadwright build main.py --variant display
+.venv/bin/scadwright build main.py --variant exploded
+.venv/bin/scadwright build main.py --variant section
 ```
 
-The slot reads distance by default. Building with `--readout=power`
-swaps distance and power over, so the slot shows the power each aperture
-needs at a distance you have set, which is what the paper original did.
+The slot reads distance by default. Building with `--readout power` swaps
+distance and power over, so the slot shows the power each aperture needs
+at a distance you have set, which is what the paper original did.
 Aperture stays put either way.
+
+The slot has room for one row per column, so its distances are labelled
+in metres unless you ask for `--units feet`. Both sets mark the same
+detents, so this changes nothing but the engraving. Where distance is a
+setting rather than the answer it sits in a window with room for two
+rows, which carry metres and feet together whatever you pass. Guide
+numbers stay in metres, as flashes quote them.
 
 ## Printing
 

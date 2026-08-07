@@ -2,7 +2,8 @@
 
     scadwright build main.py                        # print plate (default)
     scadwright build main.py --variant=display      # assembled, one setting
-    scadwright build main.py --readout=distance     # distance per f/stop
+    scadwright build main.py --readout power        # power per f/stop
+    scadwright build main.py --units feet           # slot labelled in feet
     scadwright build main.py --variant=exploded     # pulled apart along the axis
     scadwright build main.py --variant=section      # cut away, to check fits
     scadwright morph  main.py assemble out.apng     # the stack coming together
@@ -50,20 +51,11 @@ import scales
 from dims import LAYOUT, Dims as D
 from parts import DistRing, EndCap, GnRing, InnerTube, IsoRing
 
-# The setting the posed variants are shown at: a Mecablitz-sized flash on
-# slow film at one metre.
-#
-# Chosen because it is the setting that photographs best, and it is worth
-# saying why. Two things fall out of it at once. Every aperture column is
-# populated, so the slot is full across the whole f/2 to f/22 span. And
-# all four windows land on the same meridian, so the whole instrument can
-# be read down one line, which only happens when the ISO ring and the
-# third ring are both at their first mark.
-POSE = dict(
-    gn=scales.GUIDE_NUMBERS.index("45"),
-    iso=scales.ISOS.index("25"),
-    third=0,        # first mark of whichever setting the layout puts third
-)
+# The setting the posed variants are shown at. It is the setting the
+# scales are aligned on, so the three setting windows and the readout slot
+# all sit on one meridian and a single view shows the tool being read.
+# Retune it in `scales.ALIGN`, and the renders follow.
+POSE = dict(scales.ALIGN)
 
 # How far apart the exploded view pulls the segments, along the axis. The
 # morph animates this closing up, which is the order they assemble in.
@@ -178,14 +170,6 @@ class AnalogFlashCalculator(Design):
         # Along the axis, in assembly order, so the morph plays as the
         # rings actually go on: each slides down over the one before it.
         return self._scene(1.0)
-
-    @variant(fn=96, out="out/analog-flash-calculator-settings.scad")
-    def settings(self):
-        # The same assembly rolled half a turn, so the three setting
-        # windows face the camera instead of the readout. With a full
-        # slot the settings always land opposite the readout, so no one
-        # view can hold both.
-        return self._scene(0.0).rotate([180, 0, 0])
 
     @variant(fn=96, out="out/analog-flash-calculator-section.scad")
     def section(self):
