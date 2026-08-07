@@ -346,6 +346,30 @@ def check_threading():
     return min(bore - over for _, bore, over in passes) / 2
 
 
+def check_key_passes_every_bore():
+    """The inner tube's key has to get through every ring on the way down.
+
+    The rings thread on from the key end, so the key sweeps the full
+    length of each one. It stands proud of the tube by more than any
+    spigot bore clears, which is why each ring carries a channel on its
+    window meridian. Without that channel nothing assembles, and the plain
+    bore-versus-OD comparison above cannot see it.
+    """
+    key_r = D.inner_od / 2 + D.key_h
+    bore_r = D.spigot_bore / 2
+    assert key_r > bore_r, (
+        "the key no longer stands proud of the spigot bore, so the "
+        "keyways are dead weight: drop them or the check"
+    )
+    channel_r = D.inner_od / 2 + D.key_h + D.key_slip / 2
+    assert channel_r > key_r, (
+        f"keyway reaches {channel_r:.2f} mm, the key {key_r:.2f} mm: "
+        f"the key will not pass"
+    )
+    assert D.key_w + D.key_slip > D.key_w, "keyway is not wider than the key"
+    return key_r - bore_r, D.key_slip / 2
+
+
 def check_spring_actually_loads():
     """The spring must be the only thing the nut washer lands on.
 
@@ -414,6 +438,10 @@ if __name__ == "__main__":
     off = check_headings_line_up_with_values()
     print(f"columns        headings centred on their values within "
           f"{off:.2f} mm of {D.power_col:.0f}")
+
+    key_proud, key_clear = check_key_passes_every_bore()
+    print(f"keyway        the key stands {key_proud:.2f} mm proud of every "
+          f"bore; channels clear it by {key_clear:.2f} mm")
 
     clr = check_threading()
     print(f"threading      every segment goes on; tightest {clr:.2f} mm per side")

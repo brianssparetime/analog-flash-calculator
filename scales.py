@@ -289,7 +289,7 @@ def window_legend(quantity, units="meters"):
     line either side of it has to carry both the name and the unit.
     """
     if quantity == "power":
-        return "1/", ""             # reads 1/4; the value is the divisor
+        return "FP 1/", ""          # reads FP 1/4; the value is the divisor
     if quantity == "distance":
         return "DIST", UNIT_MARK[units]
     if quantity == "gn":

@@ -173,7 +173,11 @@ aboard.*
 
 *The same five pieces closing up.*
 
-Everything threads on from the nut end, in order.
+Everything threads on from the nut end, in order. Set each ring to the
+aligned setting as it goes on: the inner tube's key stands proud of every
+bore, and the channel each ring carries for it is cut on that ring's
+window meridian. At GN 32, ISO 400, FP 1/1 the channels line up and the
+stack drops together. Anywhere else a ring stops against the key.
 
 1. Slide `gn_ring`, then `iso_ring`, then `dist_ring` onto the inner
    tube. Each goes over its plain outside and seats against the flange of

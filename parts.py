@@ -25,7 +25,7 @@ Assembly runs right to left: gn ring, iso ring, dist ring, end cap, each
 sliding over the inner tube's plain body and seating on the one before.
 """
 
-from math import asin, degrees
+from math import asin, degrees, radians
 
 from scadwright import BBox, Component, bbox
 from scadwright.boolops import difference, union
@@ -158,14 +158,47 @@ def window(*, z0, length, arc=None):
     ).up(z0)
 
 
-def tick(*, z, angle, length=3.5, width=0.8, depth=0.5):
-    """A short circumferential index line cut into the outer surface."""
+def tick(*, z, angle, length=3.5, width=0.45, depth=0.3):
+    """A fine circumferential index line cut into the outer surface.
+
+    Lighter than an engraved label on purpose: it divides the readings
+    without competing with them for the eye.
+    """
     return (
         cube([2 * depth, length, width], center="xyz")
         .translate([D.outer_od / 2, 0, 0])
         .rotate([0, 0, angle])
         .up(z)
     )
+
+
+def keyway(z0, z1):
+    """The channel the inner tube's key passes through.
+
+    The key stands proud of the tube by more than the rings' bores clear,
+    so without this no ring could be threaded on at all. It is cut on the
+    window meridian, which means the channels in all three rings line up
+    only when the tool is set to the setting its scales are aligned on.
+    Set it there and the stack drops together; set it anywhere else and
+    the rings stop against the key.
+    """
+    return (
+        cube([D.inner_od / 2 + D.key_h + D.key_slip / 2,
+              D.key_w + D.key_slip,
+              z1 - z0 + 2 * EPS], center="y")
+        .up(z0 - EPS)
+    )
+
+
+def groove(*, z, od, width=0.45, depth=0.3):
+    """The same index line, taken all the way around a scale surface.
+
+    A scale turns under its window, so a mark at one angle would only
+    line up with the cap's ticks at one setting. Cut right round, the
+    divisions between readings meet the divisions between headings
+    whatever the ring is set to.
+    """
+    return Tube(h=width, od=od + 2 * EPS, id=od - 2 * depth).up(z - width / 2)
 
 
 def detents(*, z_face, count, sphere_r, reach):
@@ -307,6 +340,7 @@ class _SettingRing(Component):
             window(z0=r0 + D.window_margin,
                    length=(r1 - r0) - 2 * D.window_margin),
             divots(r1),
+            keyway(r0 + D.seam_gap, c1),
         ]
         # Name before the window and unit after it, on the window's own
         # line, so the three read across together: GN 32 m.
@@ -439,6 +473,9 @@ class DistRing(_SettingRing):
                 marks=LAYOUT.value_marks,
                 angle_of=lambda u, c=c: LAYOUT.table_angle(u, c),
             )
+        for a in range(len(LAYOUT.column_labels) + 1):
+            yield groove(z=B3 + D.power_margin + a * D.power_col,
+                         od=D.spigot_od)
 
 
 # ---------------------------------------------------------------------------
@@ -482,12 +519,7 @@ class EndCap(Component):
         return engrave(body, cutters)
 
     def _keyway(self):
-        return (
-            cube([D.inner_od / 2 + D.key_h + D.key_slip / 2,
-                  D.key_w + D.key_slip,
-                  D.inner_end_z - B4 + D.tip_gap + 2 * EPS], center="y")
-            .up(B4 - EPS)
-        )
+        return keyway(B4, D.inner_end_z + D.tip_gap)
 
     def _legends(self):
         # Aperture headings come before the slot, one per column; the
@@ -513,18 +545,24 @@ class EndCap(Component):
             label=LAYOUT.heading, size=D.legend_font,
         )
 
-        # Aperture headings beside the slot, one per column, with a tick
-        # at each boundary so the eye can tell the columns apart.
+        # Aperture headings beside the slot, one per column, with a rule
+        # at each boundary so the eye can tell the columns apart. The rule
+        # runs from the slot's edge out past the widest heading, so the
+        # headings sit in ruled cells rather than floating beside the slot.
+        widest = max(LAYOUT.column_labels, key=len)
+        inner = D.window_arc / 2 + 1
+        outer = above + label_arc(D.outer_od, widest, D.power_font) / 2 + 1.5
+        span = radians(outer - inner) * D.outer_od / 2
         for a, label in enumerate(LAYOUT.column_labels):
             yield engrave_text(
                 od=D.outer_od, z=B3 + D.power_margin + (a + 0.5) * D.power_col,
                 label=label, angle=above, size=D.power_font,
             )
             yield tick(z=B3 + D.power_margin + a * D.power_col,
-                       angle=-(D.window_arc / 2 + 5))
+                       angle=(inner + outer) / 2, length=span)
         yield tick(z=B3 + D.power_margin
                      + len(LAYOUT.column_labels) * D.power_col,
-                   angle=-(D.window_arc / 2 + 5))
+                   angle=(inner + outer) / 2, length=span)
 
         # On the back: the assumption the guide numbers are quoted
         # under, and a maker's line below it.
