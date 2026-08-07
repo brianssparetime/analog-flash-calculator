@@ -283,6 +283,12 @@ def check_spring_bears_only_on_the_cap():
     # Each pocket must bottom on solid cap, not open into the readout slot.
     floor = D.pocket_z0 - D.power_z1
     assert floor > 0, "a pocket floor opens into the readout slot"
+    # Raising the count is how the detent is made firmer, so the web
+    # between neighbours is the thing that bounds it.
+    assert D.pocket_web >= 2, (
+        f"{int(D.spring_count)} pockets leave {D.pocket_web:.2f} mm of web "
+        f"between neighbours, too thin to print"
+    )
     return pocket_inner_r - tube_r, wall, floor
 
 
@@ -458,8 +464,9 @@ if __name__ == "__main__":
           f"{D.bump_proud:.2f} mm; {slack:.2f} mm of seam to spare")
 
     clear_r, wall, floor = check_spring_bears_only_on_the_cap()
-    print(f"spring seat    pockets clear the tube by {clear_r:.1f} mm and the "
-          f"wall by {wall:.1f} mm; {floor:.1f} mm of floor")
+    print(f"spring seat    {int(D.spring_count)} pockets clear the tube by "
+          f"{clear_r:.1f} mm and the wall by {wall:.1f} mm; "
+          f"{D.pocket_web:.1f} mm of web between them")
 
     cap, lift = check_spring_actually_loads()
     print(f"spring         washer overhangs the stack by {cap / 2:.1f} mm "

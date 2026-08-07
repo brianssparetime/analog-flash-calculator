@@ -501,9 +501,12 @@ class EndCap(Component):
             cylinder(h=D.overall_len - B4, d=D.outer_od).up(B4),
         )
         cutters = [
-            # Power slot, spanning every aperture column.
-            window(z0=B3 + D.power_margin / 2,
-                   length=D.power_band - D.power_margin),
+            # The slot spans the columns exactly, ending on the first and
+            # last division rather than half a cell past them. Overrun and
+            # a blank half-cell shows above the first reading and below
+            # the last, which reads as a missing value.
+            window(z0=B3 + D.power_margin,
+                   length=D.power_col * len(LAYOUT.column_labels)),
             # Hub bore and keyway: a sliding fit with no shoulder to
             # bottom against, so the inner tube never carries bolt load.
             # It ends `tip_gap` below the seat and cannot reach it.

@@ -14,7 +14,7 @@ near face, so every label runs around the barrel rather than along it.
   <img src="rendered_img/hero.png?v=2" alt="The assembled calculator standing on end: three setting windows and the readout slot stacked up the near face" width="480">
 </p>
 
-*The whole instrument is 77 x 43 mm. It stands on end and reads down one
+*The whole instrument is 73 x 43 mm. It stands on end and reads down one
 face: guide number, film speed and power in their windows, then the slot
 giving the distance reached at each aperture. Every seam is a setting.*
 
@@ -58,10 +58,9 @@ window into view. In practice that matters little: the guide number gets
 set once per flash, the film speed once per roll, and only the third ring
 moves between shots.
 
-A window with nothing to show carries an arrow rather than a blank, since
-every scale is shorter than the twelve detents around the tool. It points
-toward the nearer end of its scale, so turning that way brings the marks
-back into view.
+Turned past the end of a scale, a window shows an arrow instead of a
+blank. It points toward the nearer end of that scale, so turning that way
+brings the marks back.
 
 ## How it works
 
@@ -117,12 +116,9 @@ distance and power over, so the slot shows the power each aperture needs
 at a distance you have set, which is what the paper original did.
 Aperture stays put either way.
 
-The slot has room for one row per column, so its distances are labelled
-in metres unless you ask for `--units feet`. Both sets mark the same
-detents, so this changes nothing but the engraving. Where distance is a
-setting rather than the answer it sits in a window with room for two
-rows, which carry metres and feet together whatever you pass. Guide
-numbers stay in metres, as flashes quote them.
+The slot holds one row per column, so its distances come in metres unless
+you ask for `--units feet`. Both mark the same detents, so nothing moves
+but the engraving. Guide numbers stay in metres, as flashes quote them.
 
 ## Printing
 
@@ -159,11 +155,10 @@ so they cap the ends rather than drop into them.
 
 The click comes from three compression springs, 3.5 mm across the coil
 with 0.5 mm wire and 10 mm long
-([these](https://www.ebay.com/itm/287411987228)). They drop into pockets
-around the cap's hub and stand a millimetre proud, so the nut washer
-lands on all three. Three in parallel come to about 7.5 N/mm,
-which is a firmer detent than one large spring in the middle; 0.4 mm wire
-gives a lighter one if you prefer it.
+([these](https://www.ebay.com/itm/287411987228)). They stand 3 mm out of
+their pockets, which is the range the nut has to tighten through, so the
+click can be set anywhere from light to firm. For a firmer one still,
+raise `spring_count` in `dims.py`.
 
 <p align="center">
   <img src="rendered_img/exploded.png" alt="The five parts drawn apart along the bolt in the order they assemble" width="640">
@@ -179,31 +174,28 @@ aboard.*
 
 *The same five pieces closing up.*
 
-Everything threads on from the nut end, in order. Set each ring to the
-aligned setting as it goes on: the inner tube's key stands proud of every
-bore, and the channel each ring carries for it is cut on that ring's
-window meridian. At GN 32, ISO 400, FP 1/1 the channels line up and the
-stack drops together. Anywhere else a ring stops against the key.
+Everything threads on from the nut end, in order, with every ring set to
+GN 32, ISO 400, FP 1/1. Each ring's bore is channelled for the inner
+tube's key on its window meridian, and only at that setting do the
+channels line up. Anywhere else a ring stops against the key.
 
 1. Slide `gn_ring`, then `iso_ring`, then `dist_ring` onto the inner
    tube. Each goes over its plain outside and seats against the flange of
    the one before it.
 2. Slide `end_cap` on over the key at the tube's far end. It is a sliding
    fit with nothing to bottom against, so the tube never takes bolt load.
-3. Drop a spring into each of the three pockets in the cap's end face.
-   They stand a millimetre proud of it.
+3. Drop a spring into each pocket in the cap's end face. They stand 3 mm
+   proud of it.
 4. Bolt and washer through from the head end, bearing on the inner tube's
    end face.
-5. Washer and nut on the spring end. The washer meets the three springs
-   before it meets the cap's end face, which bounds the travel. Tighten
-   until the segments click firmly but still turn by hand.
+5. Washer and nut on the spring end. The washer meets the springs before
+   it meets the cap's end face, which bounds the travel. Tighten until
+   the segments click firmly but still turn by hand.
 
 The force path runs nut, washer, springs, cap, dist ring, iso ring, gn
 ring, inner tube, washer, bolt head. One path, with the springs in
 series, so a bump can climb out of its dimple without the assembly having
-to stretch. The pockets sit on a circle outside the hub, at a radius the
-inner tube cannot reach, so the tube can never bottom on a spring and
-leave the rings unloaded.
+to stretch.
 
 | part | what it carries |
 |---|---|

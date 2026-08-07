@@ -95,7 +95,7 @@ class AnalogFlashCalculator(Design):
     # One 3.5 mm x 0.5 wire x 10 mm spring, drawn three times: stock
     # hardware, and three in parallel give a firmer detent than the single
     # large spring they replace.
-    spring = Spring(r=1.5, wire_r=0.25, pitch=1.125, turns=8)
+    spring = Spring(r=1.5, wire_r=0.25, pitch=D.pocket_depth / 8, turns=8)
 
     def _posed(self):
         """The four segments rotated to POSE, innermost first.

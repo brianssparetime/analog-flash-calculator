@@ -125,7 +125,10 @@ class Dims(Spec):
         # not above or below it, so they cost arc rather than length.
         gn_band = 8
         iso_band = 8
-        dist_band = 12                  # two rows: metres and feet
+        # Two rows when the third setting is distance, which is printed in
+        # metres and feet together; one row, and a band the same height as
+        # the two above it, when it is power.
+        dist_band = {12 if LAYOUT.third == "distance" else 8}
         power_col = 3.8                 # one aperture column
         power_margin = 3                # keeps the end labels off the slot ends
         power_band = power_col * {len(LAYOUT.column_labels)} + 2 * power_margin
@@ -149,18 +152,37 @@ class Dims(Spec):
         # hard stop: total axial travel is bounded, and tuned at the nut.
         washer_od = 51                  # 2 in fender washer, 1/4 in bore
 
-        # Three small springs in their own pockets, on a circle outside the
-        # hub. Sitting at a radius the hub does not use, they run alongside
-        # the key engagement instead of beyond it, which is what keeps the
-        # tail short. Three points also seat the washer without cocking it.
+        # Small springs in their own pockets, on a circle outside the hub.
+        # Sitting at a radius the hub does not use, they run alongside the
+        # key engagement instead of beyond it, which is what keeps the tail
+        # short.
+        #
+        # Three is enough once the springs are properly compressed. Each is
+        # about 2.5 N/mm, so three at three millimetres of preload come to
+        # 22 N at the stop, which is a firm click and about 0.24 Nm to turn
+        # against. Six would be 45 N, where the drag on every sliding face
+        # starts to outweigh the detent, and it would halve the number of
+        # turns of the nut the useful range is spread over. Three points
+        # also seat the washer without rocking. The circle holds fourteen
+        # before `pocket_web` runs out, if a much firmer tool is wanted.
         spring_count = 3
         spring_od = 3.5                 # stock 3.5 x 0.5 wire x 10 free
         pocket_slip = 0.5
         pocket_dia = spring_od + pocket_slip
         pocket_r = (inner_od / 2 + key_h + key_slip / 2
                     + outer_od / 2 - sleeve_wall) / 2
-        pocket_depth = 9                # 10 mm spring, standing proud
-        spring_proud = bump_proud + 0.3 # stand-off at rest
+        pocket_web = 2 * pi * pocket_r / spring_count - pocket_dia
+
+        # How far the springs stand out of their pockets is the whole
+        # adjustment range at the nut, so the pocket is cut well short of
+        # the spring rather than a hair short. Three millimetres is about
+        # two and a half turns of a 1/4-20 nut to play with, where one
+        # millimetre would be under a turn from loose to hard against the
+        # stop. It also has to exceed `bump_proud`, or a detent could not
+        # lift at all once the washer is down.
+        spring_free = 10                # 3.5 x 0.5 wire x 10 stock spring
+        pocket_depth = 7
+        spring_proud = spring_free - pocket_depth
 
         # The inner tube stops short of the cap's end face, which is solid
         # but for the bolt hole. The pockets sit outside the tube's radius
@@ -219,6 +241,7 @@ class Dims(Spec):
         pocket_r + pocket_dia / 2 < outer_od / 2 - sleeve_wall   # keeps its wall
         pocket_r - pocket_dia / 2 > inner_od / 2 + key_h + key_slip / 2
         pocket_z0 > power_z1 + cap_web_t           # floor stays out of the slot
+        pocket_web >= 2                 # printable web between the pockets
         spring_depth > 2 * bump_proud   # room to climb out of a detent
         overall_len - inner_end_z > tip_gap     # tube clear of the end
     """
