@@ -132,11 +132,19 @@ class AnalogFlashCalculator(Design):
         """
         lead = -spread * 30                       # head end, below
         tail = spread * (3 * EXPLODE_STEP + 20)   # nut end, above
-        washer_t = 1.6
+        washer_t, head_t, nut_t = 1.6, 5.0, 5.5
         head_z = -washer_t + lead                 # its face bears on z = 0
+        # Cut off flush with the nut, as it would be in the hand: a bolt
+        # bought long enough to assemble with leaves a stub otherwise. The
+        # length is fixed rather than solved per stage, because `morph`
+        # pairs inline primitives by their parameters and will not accept
+        # a cylinder that changes height between stages. In the exploded
+        # stage the nut therefore floats off the end, which is what an
+        # exploded view is for.
+        shank = D.overall_len + 2 * washer_t + nut_t + head_t
 
-        yield cylinder(h=D.overall_len + 26, d=6.35).up(head_z - 6).color("silver")
-        yield cylinder(h=5, d=13).up(head_z - 5).color("silver")
+        yield cylinder(h=shank, d=6.35).up(head_z - head_t).color("silver")
+        yield cylinder(h=head_t, d=13).up(head_z - head_t).color("silver")
         yield self.washer.up(head_z).color("silver")
         n = int(D.spring_count)
         for i in range(n):
@@ -145,7 +153,7 @@ class AnalogFlashCalculator(Design):
                    .rotate([0, 0, i * 360.0 / n])
                    .color("gold"))
         yield self.fender.up(D.overall_len + tail).color("silver")
-        yield cylinder(h=5.5, d=11.5, fn=6).up(
+        yield cylinder(h=nut_t, d=11.5, fn=6).up(
             D.overall_len + washer_t + tail
         ).color("silver")
 

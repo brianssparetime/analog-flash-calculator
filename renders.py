@@ -29,7 +29,10 @@ import sys
 import tempfile
 from pathlib import Path
 
+from scadwright import bbox
+
 from dims import Dims as D
+from main import AnalogFlashCalculator
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "out"
@@ -55,6 +58,13 @@ CGAL = "--cgal" in sys.argv
 MID = D.overall_len / 2                       # middle of the whole tool
 POWER_MID = D.power_z0 + D.power_band / 2     # middle of the aperture slot
 WINDOWS_MID = D.power_z0 / 2                  # the three setting windows
+
+# The exploded stage reaches well past both ends of the tool, and by how
+# much depends on the explode step and the hardware travel. Measure it
+# rather than carry a number that goes stale every time either changes.
+_EXPLODED = bbox(AnalogFlashCalculator().exploded())
+EXPLODED_MID = (_EXPLODED.min[2] + _EXPLODED.max[2]) / 2
+EXPLODED_SPAN = _EXPLODED.max[2] - _EXPLODED.min[2]
 
 
 def fit(span_mm, size, margin=1.1):
@@ -133,7 +143,7 @@ SHOTS = [
     ),
     Shot(
         "exploded", "exploded",
-        camera=(0, 0, 80, 82, 0, 80, fit(254, TALL)),
+        camera=(0, 0, EXPLODED_MID, 82, 0, 80, fit(EXPLODED_SPAN, TALL)),
         size=TALL,
         caption="Five pieces, in the order they thread on.",
     ),
@@ -161,7 +171,7 @@ SHOTS = [
 # reading face turned away. Taking the animated SCAD instead lets the
 # same camera the stills use frame it, and lets the last frame be held.
 ANIM = dict(name="assembly", frames=48, hold=24, fps=30, size=(700, 1000),
-            camera=(0, 0, 80, 82, 0, 80))
+            camera=(0, 0, EXPLODED_MID, 82, 0, 80))
 
 
 def animate(spec=ANIM):
@@ -180,7 +190,8 @@ def animate(spec=ANIM):
             [OPENSCAD, "-o", str(tmp / "f.png"),
              f"--animate={spec['frames']}", f"--imgsize={w},{h}",
              "--camera=" + ",".join(
-                 f"{v:g}" for v in (*spec["camera"], fit(254, spec["size"]))),
+                 f"{v:g}" for v in (*spec["camera"],
+                                    fit(EXPLODED_SPAN, spec["size"]))),
              f"--colorscheme={INKED}", str(scad)],
             check=True, capture_output=True, text=True,
         )
