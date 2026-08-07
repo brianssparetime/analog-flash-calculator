@@ -1,28 +1,33 @@
 # Analog flash calculator
 
-This calculator wraps an exposure dial's logarithmic slide rule around an
-axis instead of laying it out flat on a disc. Four printed rings turn
-against each other on a single bolt. Three of them carry a setting apiece
-behind its own window, and the long slot in the fourth gives the answer.
+A few years ago, while experimenting with flashes in analog photography, [I made
+a quick mockup of a flash power calculator, using graph paper wrapped around a 
+dowel.](https://www.brianssparetime.com/posts/im-learning-to-use-a-flash-on-my-analog-camera-so-i-made-an-analog-fla/)
 
-Dial in the flash's guide number, the film speed, and the power the flash
-is set to, and the slot shows how far that flash reaches at every
-aperture from f/2 to f/22 at once. It is held upright and read down the
-near face, so every label runs around the barrel rather than along it.
+Someone on reddit suggewsted a 3d printed one, but at the time it was 
+beyond abilities (or more of a time investment than I wanted to make).  Now
+I've done a few other 3d printing projects, built [SCADwright](https://github.com/brianssparetime/SCADwright),
+and I thought I'd return to this idea.
+
+Though this is largely just a 3d version of my paper model, I did make a handful 
+of changes.  The paper version had three layers and baked the guide number in 
+as a constant; adding a fourth ring turns the guide number into a setting, 
+so this tool is useful to people whose flash has a different GN than mine.  The
+numbers in the window also run circumferentially rather than down the axis,
+which enables a much more compact outer shape for the whole thing.
+
+In essence, this calculator wraps the classic exposure dial's logarithmic disc slide rule 
+around an axis  Four printed rings turn against each other on a single bolt. 
+Three of them have setting windows (guide number GN, ISO, and flash power FP), and the fourth
+contains a readout window giving your the relationship between aperture and distance.
 
 <p align="center">
   <img src="rendered_img/hero.png?v=2" alt="The assembled calculator standing on end: three setting windows and the readout slot stacked up the near face" width="480">
 </p>
 
-*The whole instrument is 73 x 43 mm. It stands on end and reads down one
-face: guide number, film speed and power in their windows, then the slot
-giving the distance reached at each aperture. Every seam is a setting.*
+*The whole instrument is 73 x 43 mm.*
 
-I made [a paper one](https://www.brianssparetime.com/posts/im-learning-to-use-a-flash-on-my-analog-camera-so-i-made-an-analog-fla/)
-a few years ago, wrapped around a dowel, and the suggestion I got then
-was to print one. This is that. The paper version had three layers and
-baked the guide number in as a constant; adding a fourth ring turns the
-guide number into a setting, so one tool covers every flash.
+
 
 ## Using it
 
@@ -40,23 +45,9 @@ The long slot then shows the distance the flash reaches under each
 aperture heading, in metres. Where an aperture falls off the end of the
 scale at that setting, its column is blank.
 
-Say you are shooting a Mecablitz 45 on ISO 400 at full power. Set GN 45,
-ISO 400, POWER 1, and the slot gives you 4 m at f/22 through 16 m at
-f/5.6. Anything wider is blank, because the flash reaches past the end of
-the scale.
-
 To change a setting, twist the two segments either side of its seam
 against each other. The spring lets the bumps cam out of their dimples,
 so nothing has to be pulled apart first.
-
-The windows only sit in a row for one setting, since each rides on the
-segment carrying it and those have to turn relative to each other to hold
-a setting. The scales are engraved so that the row falls at GN 32, ISO
-400, full power, where every window and the slot line up along one side
-of the barrel. Away from there, roll the tool in your hand to bring each
-window into view. In practice that matters little: the guide number gets
-set once per flash, the film speed once per roll, and only the third ring
-moves between shots.
 
 Turned past the end of a scale, a window shows an arrow instead of a
 blank. It points toward the nearer end of that scale, so turning that way
@@ -64,9 +55,8 @@ brings the marks back.
 
 ## How it works
 
-Every scale is logarithmic, and one detent of rotation is one stop on all
-of them. That is what lets a single 30-degree pitch serve five different
-quantities.
+Every scale is logarithmic, and one detent of rotation moves one stop on any
+of them. 
 
 | quantity | range | one stop |
 |---|---|---|
@@ -86,15 +76,10 @@ in stops:
 Each pair of neighbouring segments contributes one term through its
 window, and the four rotations sum to that identity.
 
-Guide numbers land on the same rounded sqrt(2) series as the apertures,
-so a GN 38 flash sits between the 32 and 45 marks. That is the price of a
-single detent pitch shared by every scale, and it falls inside the margin
-by which published guide numbers are optimistic anyway. Round down if you
-want the exposure.
+For guide numbers between those shown, just use the next lowest one for a little
+extra exposure.  
 
-Feet cannot land on round numbers when metres do, so the foot row is an
-honest rounding of the same detents rather than a prettied-up second
-series.
+Feet are just a rounded approximations of the meter version.
 
 ## Building the models
 
@@ -111,12 +96,12 @@ python3 -m venv .venv
 .venv/bin/scadwright build main.py --variant section
 ```
 
-The slot reads distance by default. Building with `--readout power` swaps
+The main readout reads distance by default. Building with `--readout power` swaps
 distance and power over, so the slot shows the power each aperture needs
 at a distance you have set, which is what the paper original did.
 Aperture stays put either way.
 
-The slot holds one row per column, so its distances come in metres unless
+The main readout holds one row per column, so its distances come in metres unless
 you ask for `--units feet`. Both mark the same detents, so nothing moves
 but the engraving. Guide numbers stay in metres, as flashes quote them.
 
@@ -147,15 +132,14 @@ Each stands on the axis it was engraved around.*
 
 ## Assembly
 
-Besides the printed parts you need one 1/4-20 bolt, 3 1/2 inches and
-**fully threaded**, since a part-threaded one has too long a plain shank
-for the nut to reach. Add one nut and two 1/4 inch fender washers of 2
-inch outside diameter. Both washers have to be wider than the 43 mm body,
+Besides the printed parts you need one 1/4-20 bolt, at least 3 1/2 inches 
+(preferably fully threaded), and one nut and two 1/4 inch fender washers of 2
+inch outside diameter. Both washers have to be wider than the 43 mm (1.7 inch) body diameter,
 so they cap the ends rather than drop into them.
 
 The click comes from three compression springs, 3.5 mm across the coil
 with 0.5 mm wire and 10 mm long
-([these](https://www.ebay.com/itm/287411987228)). They stand 3 mm out of
+(e.g., [these](https://www.ebay.com/itm/287411987228)). They stand 3 mm out of
 their pockets, which is the range the nut has to tighten through, so the
 click can be set anywhere from light to firm. For a firmer one still,
 raise `spring_count` in `dims.py`.
