@@ -134,7 +134,7 @@ Each stands on the axis it was engraved around.*
 
 Besides the printed parts you need one 1/4-20 bolt, at least 3 1/2 inches 
 (preferably fully threaded), and one nut and two 1/4 inch fender washers of 2
-inch outside diameter. Both washers have to be wider than the 43 mm (1.7 inch) body diameter,
+inch outside diameter. Both washers have to be wider than the 43 mm (1 11/16 inch) body diameter,
 so they cap the ends rather than drop into them.
 
 The click comes from three compression springs, 3.5 mm across the coil
