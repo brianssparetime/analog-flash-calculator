@@ -92,10 +92,15 @@ class AnalogFlashCalculator(Design):
     # chain and what bounds the total axial travel.
     washer = Tube(h=1.6, od=D.washer_od, id=7)
     fender = Tube(h=1.6, od=D.washer_od, id=7)
-    # One 3.5 mm x 0.5 wire x 10 mm spring, drawn three times: stock
-    # hardware, and three in parallel give a firmer detent than the single
-    # large spring they replace.
-    spring = Spring(r=1.5, wire_r=0.25, pitch=D.pocket_depth / 8, turns=8)
+    # One instance per spring, for the same reason the two washers are
+    # separate instances of an identical tube: `morph` pairs leaves
+    # between stages by instance, so drawing one spring three times leaves
+    # it unable to tell the three apart. It animates whichever it pairs
+    # first and abandons the rest in place.
+    springs = tuple(
+        Spring(r=1.5, wire_r=0.25, pitch=D.pocket_depth / 8, turns=8)
+        for _ in range(int(D.spring_count))
+    )
 
     def _posed(self):
         """The four segments rotated to POSE, innermost first.
@@ -152,9 +157,9 @@ class AnalogFlashCalculator(Design):
         yield cylinder(h=shank, d=6.35).up(head_z - head_t).color("silver")
         yield cylinder(h=head_t, d=13).up(head_z - head_t).color("silver")
         yield self.washer.up(head_z).color("silver")
-        n = int(D.spring_count)
-        for i in range(n):
-            yield (self.spring
+        n = len(self.springs)
+        for i, spring in enumerate(self.springs):
+            yield (spring
                    .translate([D.pocket_r, 0, spring_z])
                    .rotate([0, 0, i * 360.0 / n])
                    .color("gold"))
