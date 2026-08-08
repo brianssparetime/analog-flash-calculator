@@ -189,9 +189,15 @@ class AnalogFlashCalculator(Design):
     @variant(fn=96, out="out/analog-flash-calculator-print.scad", default=True)
     def print(self):
         # Bumps up on all four: every segment prints as modelled.
+        #
+        # The usable area, not the bed. Five of these in a line come to
+        # 248.8 mm, which clears a 250 mm bed by 1.2 mm: no room for a
+        # skirt, and less than the edge most slicers keep clear anyway.
+        # Declaring what is actually usable wraps the last one onto a
+        # second row instead of passing a plate that will not print.
         return arrange_on_bed(
             self.inner, self.gn_ring, self.iso_ring, self.dist_ring,
-            self.end_cap, plate=(250, 250), gap=10,
+            self.end_cap, plate=(230, 230), gap=10,
         )
 
     @variant(fn=96, out="out/analog-flash-calculator-display.scad")
