@@ -156,7 +156,10 @@ SHOTS = [
     ),
     Shot(
         "print-plate", "print",
-        camera=(124, 22, 38, 72, 0, 18, fit_wide(270, LANDSCAPE)),
+        # Two rows since the cap moved back, so this looks further down
+        # than the other shots: level enough and the tube in front hides
+        # the cap behind it.
+        camera=(98, 48, 24, 62, 0, 20, fit_wide(230, LANDSCAPE)),
         size=LANDSCAPE,
         caption="All five pieces as they print, standing on their axes.",
     ),
