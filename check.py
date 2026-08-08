@@ -9,8 +9,15 @@ rules in `dims` cannot express on their own:
 
     every label falls inside the window that has to show it
     no two labels collide with each other
-    the label the equation calls for lands on the window's meridian\n    each column's heading and its values share an axial centre\n    every window frames its label without catching the next one\n    every segment threads onto the stack past everything in its way
-    the spring is the only thing the end washer can land on\n    nothing obstructs a detent lifting, least of all the spanning tube\n    every segment lands in the axial band the layout assigns it
+    the label the equation calls for lands on the window's meridian
+    each column's heading and its values share an axial centre
+    every window frames its label without catching the next one
+    nothing engraved on the end cap runs into anything else on it
+    every segment is one solid, not two shells that only look like one
+    every segment threads onto the stack past everything in its way
+    the spring is the only thing the end washer can land on
+    nothing obstructs a detent lifting, least of all the spanning tube
+    every segment lands in the axial band the layout assigns it
 
 Label extents are measured off the real text geometry rather than
 estimated, so the numbers here are the ones that get printed.
@@ -23,7 +30,7 @@ from scadwright import bbox
 import scales
 from dims import LAYOUT, Dims as D
 from parts import (
-    B0, B1, B2, B3, B4, DistRing, EndCap, GnRing, InnerTube, IsoRing,
+    B0, B1, B2, B3, B4, BAND, DistRing, EndCap, GnRing, InnerTube, IsoRing,
     engrave_text, window_rows,
 )
 from scales import (
@@ -96,8 +103,11 @@ def check_labels_fit_windows():
                             angle=LAYOUT.setting_angle("third", t), size=D.dist_font),
                 third_win, f"{LAYOUT.third} {label}{unit}")
 
-    value_win = (B3 + D.power_margin / 2,
-                 B4 - D.power_margin / 2)
+    # The slot as `EndCap.build` actually cuts it, not the band it sits
+    # in: the margin is at both ends, so testing against half of it passed
+    # labels that the opening would have clipped by 1.5 mm.
+    value_win = (B3 + D.power_margin,
+                 B3 + D.power_margin + D.power_col * len(LAYOUT.column_labels))
     for a in range(len(APERTURES)):
         col_mid = B3 + D.power_margin + (a + 0.5) * D.power_col
         for p, label in enumerate(LAYOUT.value_marks):
@@ -307,9 +317,15 @@ def check_travel_is_unobstructed():
     """
     lift = D.bump_proud
 
-    # These open as the stack lengthens; they only need to exist.
-    assert D.overall_len > D.inner_end_z, (
-        "the tube reaches the cap's end face"
+    # What the tube can actually reach is the cap's bore ceiling, `end_t`
+    # inside the outer face -- comparing against the face flattered this
+    # by the thickness of the cap's end. That gap is also the only place
+    # four segments' worth of layer quantisation can go, so it has to
+    # cover a lift and then some, not just exist.
+    assert D.tip_gap > 2 * lift, (
+        f"{D.tip_gap:.2f} mm from the tube's tip to the cap's bore ceiling "
+        f"will not take a {lift:.2f} mm lift and the stack's length error: "
+        f"closed, the tube carries the bolt load and nothing clicks"
     )
     assert D.seam_gap > 0, "the head washer would foul the first ring"
 
@@ -325,7 +341,7 @@ def check_travel_is_unobstructed():
         f"a {D.seam_gap:.2f} mm seam closes before a {lift:.2f} mm bump "
         f"clears its dimple: the sleeves bottom out and nothing clicks"
     )
-    return D.seam_gap - lift
+    return D.seam_gap - lift, D.tip_gap - lift
 
 
 def check_threading():
@@ -352,6 +368,103 @@ def check_threading():
             f"{what}: bore {bore:.1f} will not pass OD {over:.1f}"
         )
     return min(bore - over for _, bore, over in passes) / 2
+
+
+def check_segments_hold_together():
+    """Each piece of a segment must overlap the next by real area.
+
+    This is the failure that hides from everything else. A sleeve rides
+    the spigot beneath it, so it bores wider than that spigot is round; a
+    segment's own spigot is that same diameter less `slip`, and begins
+    exactly where its sleeve ends. Radially disjoint, sharing no length,
+    the two union into a part that meshes, previews, slices and renders
+    exactly like one solid and comes off the bed in two pieces.
+
+    Every piece of every segment is an annulus about the axis, and each
+    says so in its `pieces()` -- the same list `stack()` builds it from,
+    so this cannot be testing a shape the part no longer has. Two annuli
+    are joined when their lengths meet at all and their radii overlap by
+    more than nothing; a segment holds together when its pieces are one
+    group under that.
+    """
+    tightest = None
+    for cls in (InnerTube, GnRing, IsoRing, DistRing, EndCap):
+        pieces = list(cls().pieces())
+        group = list(range(len(pieces)))        # group[i]: piece i's island
+        for i, (n1, a0, a1) in enumerate(pieces):
+            for j, (n2, b0, b1) in enumerate(pieces[i + 1:], i + 1):
+                r1, r2 = BAND[n1], BAND[n2]
+                shares = min(r1[1], r2[1]) - max(r1[0], r2[0])
+                meets = min(a1, b1) - max(a0, b0)
+                if meets < 0 or shares <= 0:
+                    continue
+                if tightest is None or shares < tightest[0]:
+                    tightest = (shares, f"{cls.__name__} {n1} to {n2}")
+                old, new = group[j], group[i]
+                group = [new if g == old else g for g in group]
+
+        islands = {}
+        for g, piece in zip(group, pieces):
+            islands.setdefault(g, []).append(piece[0])
+        assert len(islands) == 1, (
+            f"{cls.__name__} is not one solid: "
+            + "; ".join(" + ".join(v) for v in islands.values())
+            + ". It will mesh, slice and render exactly like one part and "
+              "come off the bed in pieces."
+        )
+    return tightest
+
+
+def _arc_overlap_deg(c1, h1, c2, h2):
+    """How far two circumferential labels overlap, in degrees.
+
+    Both are centred arcs, so the separation is what is left after the two
+    half-widths are taken off it. Positive means they collide.
+    """
+    sep = abs((c2 - c1 + 180) % 360 - 180)
+    return (h1 + h2) - sep
+
+
+def check_cap_text_clear():
+    """Nothing engraved on the cap's outside may run into anything else.
+
+    Every mark on the rings is placed by a scale's arithmetic, so the
+    checks above settle them. The headings beside the slot, the slot's own
+    name, and the note on the back are all placed by hand, and nothing but
+    this stops two of them landing on the same patch of barrel. A maker's
+    line meant to sit below the note, offset round the circumference
+    instead of along the axis, cut straight through it.
+
+    Two labels collide only if they overlap in both z and angle, so the
+    slot itself goes in the list as well.
+    """
+    placed = [("the readout slot",
+               (B3 + D.power_margin,
+                B3 + D.power_margin + D.power_col * len(LAYOUT.column_labels)),
+               0.0, D.window_arc / 2)]
+    for spec in EndCap().text_specs():
+        bb = bbox(engrave_text(od=D.outer_od, **spec))
+        placed.append((
+            repr(spec["label"]),
+            (bb.min[2], bb.max[2]),
+            spec["angle"],
+            _label_arc_deg(D.outer_od, spec["label"], spec["size"]) / 2,
+        ))
+
+    tightest = None
+    for i, (what, z, c, h) in enumerate(placed):
+        for other, z2, c2, h2 in placed[i + 1:]:
+            dz = min(z[1], z2[1]) - max(z[0], z2[0])
+            da = _arc_overlap_deg(c, h, c2, h2)
+            assert dz <= 0 or da <= 0, (
+                f"{what} and {other} overlap by {dz:.2f} mm and {da:.1f} deg "
+                f"on the cap's outside"
+            )
+            # Whichever way they miss by is the clearance that matters.
+            clear = max(-dz, math.radians(-da) * D.outer_od / 2)
+            if tightest is None or clear < tightest[0]:
+                tightest = (clear, what, other)
+    return tightest
 
 
 def check_key_ends_up_inside_the_cap():
@@ -439,20 +552,31 @@ def check_spring_actually_loads():
 
 
 def check_parts_build():
-    """Each segment must build and land in the z band the layout assigns."""
+    """Each segment must build and land in the z band the layout assigns.
+
+    Both bboxes are taken, and they answer different questions. Every part
+    declares a `tight_bbox`, because the framework cannot tighten a
+    difference this wide without evaluating the CSG, and `bbox(cls())`
+    returns that declaration -- so on its own it only proves the
+    declaration matches the layout. Measuring `cls().build()` instead
+    walks the geometry, and the two agreeing is what says the declaration
+    is honest: a part that quietly grew or moved would show up here rather
+    than in `arrange_on_bed` putting it through its neighbour.
+    """
     expected = {
         InnerTube: (B0, D.inner_end_z),
-        GnRing: (B0 + D.seam_gap, B2 + D.bump_proud),
-        IsoRing: (B1 + D.seam_gap, B3 + D.bump_proud),
+        GnRing: (B0 + D.seam_gap, B2 - D.floor_t + D.bump_proud),
+        IsoRing: (B1 + D.seam_gap, B3 - D.floor_t + D.bump_proud),
         DistRing: (B2 + D.seam_gap, B4 + D.bump_proud),
         EndCap: (B3 + D.seam_gap, D.overall_len),
     }
     for cls, (lo, hi) in expected.items():
-        bb = bbox(cls())
-        assert abs(bb.min[2] - lo) < 0.01 and abs(bb.max[2] - hi) < 0.01, (
-            f"{cls.__name__} spans {bb.min[2]:.2f}..{bb.max[2]:.2f}, "
-            f"expected {lo:.2f}..{hi:.2f}"
-        )
+        for name, bb in (("declares", bbox(cls())),
+                         ("builds", bbox(cls().build()))):
+            assert abs(bb.min[2] - lo) < 0.01 and abs(bb.max[2] - hi) < 0.01, (
+                f"{cls.__name__} {name} {bb.min[2]:.2f}..{bb.max[2]:.2f}, "
+                f"expected {lo:.2f}..{hi:.2f}"
+            )
 
 
 if __name__ == "__main__":
@@ -484,6 +608,10 @@ if __name__ == "__main__":
     print(f"columns        headings centred on their values within "
           f"{off:.2f} mm of {D.power_col:.0f}")
 
+    clear, a, b = check_cap_text_clear()
+    print(f"cap text       nothing on the cap overlaps anything else; "
+          f"closest {a} to {b} at {clear:.2f} mm")
+
     key_proud, key_clear = check_key_passes_every_bore()
     print(f"keyway         the key stands {key_proud:.2f} mm proud of every "
           f"bore; channels clear it by {key_clear:.2f} mm")
@@ -495,9 +623,14 @@ if __name__ == "__main__":
     clr = check_threading()
     print(f"threading      every segment goes on; tightest {clr:.2f} mm per side")
 
-    slack = check_travel_is_unobstructed()
+    overlap, join = check_segments_hold_together()
+    print(f"one piece      every segment's parts overlap; tightest "
+          f"{overlap:.2f} mm at {join}")
+
+    seam, tip = check_travel_is_unobstructed()
     print(f"travel         nothing fouls a detent lifting "
-          f"{D.bump_proud:.2f} mm; {slack:.2f} mm of seam to spare")
+          f"{D.bump_proud:.2f} mm; {seam:.2f} mm of seam and {tip:.2f} mm "
+          f"of tip gap to spare")
 
     clear_r, wall, floor = check_spring_bears_only_on_the_cap()
     print(f"spring seat    {int(D.spring_count)} pockets clear the tube by "

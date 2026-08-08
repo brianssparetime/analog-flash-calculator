@@ -17,9 +17,10 @@ nothing could otherwise be threaded past a tube built up at both ends.
 
 Each segment is a full-diameter sleeve over the band it reads and a
 reduced-diameter spigot over the band it is read through, which keeps the
-outside one constant cylinder. A spigot's end face meets the next
-segment's sleeve floor, and that annulus, well inboard of the rim, is
-where the detents live.
+outside one constant cylinder. The two are `slip` apart radially and
+share no length, so a floor joins them; that same annulus is the face the
+segment below bears on, well inboard of the rim, and is where the detents
+live. `BAND` has the radii, and each segment's `pieces()` the lengths.
 
 Assembly runs right to left: gn ring, iso ring, dist ring, end cap, each
 sliding over the inner tube's plain body and seating on the one before.
@@ -224,14 +225,43 @@ def divots(z_face):
                    sphere_r=D.divot_sphere_r, reach=D.divot_deep)
 
 
-def sleeve(z0, z1):
-    """A full-diameter section: the outside of the finished cylinder."""
-    return Tube(h=z1 - z0, od=D.outer_od, id=D.sleeve_bore).up(z0)
+# How far in from the axis each kind of piece reaches, as (r_in, r_out).
+# Only two diameters exist on the outside; what varies is the bore.
+#
+# `sleeve` rides the spigot beneath it, so it bores `slip` wider than one
+# is round. A segment's own `spigot` is that same diameter less `slip`,
+# and begins exactly where its sleeve ends -- radially disjoint from it,
+# sharing no length, so the two do not touch and unioning them gives two
+# loose shells rather than a part. `floor` is what joins them: it reaches
+# from the outside all the way in to the spigot's bore, so it meets each
+# over real area. The spigot being read stops `floor_t` short to leave it
+# room, which is what puts the detent face on the floor's underside.
+BAND = {
+    "sleeve": (D.sleeve_bore / 2, D.outer_od / 2),
+    "spigot": (D.spigot_bore / 2, D.spigot_od / 2),
+    "floor": (D.spigot_bore / 2, D.outer_od / 2),
+    "disc": (0.0, D.spigot_od / 2),     # the inner tube's scale surface
+    "rod": (0.0, D.inner_od / 2),       # the tube that spans the length
+    "tail": (0.0, D.outer_od / 2),      # the cap's solid end, bored later
+}
 
 
-def spigot(z0, z1):
-    """A reduced-diameter section that runs under the next segment."""
-    return Tube(h=z1 - z0, od=D.spigot_od, id=D.spigot_bore).up(z0)
+def stack(pieces):
+    """Build the annuli a segment describes itself as.
+
+    Every segment is a handful of coaxial pieces, and its `pieces()` is
+    where it says which and over what length. Building from that list
+    rather than composing the shapes inline means the description
+    `check_segments_hold_together` tests is the one the geometry actually
+    comes from, so the two cannot drift apart.
+    """
+    def one(name, z0, z1):
+        r_in, r_out = BAND[name]
+        if r_in <= 0:
+            return cylinder(h=z1 - z0, d=2 * r_out).up(z0)
+        return Tube(h=z1 - z0, od=2 * r_out, id=2 * r_in).up(z0)
+
+    return union(*(one(*p) for p in pieces))
 
 
 def _extents(z0, z1, od=None):
@@ -262,25 +292,40 @@ def engrave(body, cutters):
 # ---------------------------------------------------------------------------
 
 class InnerTube(Component):
-    """A spigot carrying the GN scale, then a plain body running the
+    """A solid disc carrying the GN scale, then a plain rod running the
     length of the tool.
 
     Its left end face is the head of the stack: the bolt's washer bears
     there, and the ring stack piles up against the far side of the same
-    spigot. The body is deliberately plain and thinner than every spigot
+    disc. The rod is deliberately plain and thinner than every spigot
     bore, so each ring threads straight over it. The far end carries a key
     rib that the end cap slides onto.
+
+    The disc is solid rather than a spigot, alone among the segments,
+    because nothing rides inside it: bored to the fit the rings use, it
+    would stand `slip` clear of its own rod.
     """
 
     def tight_bbox(self):
         return _extents(B0, D.inner_end_z, D.spigot_od)   # body outruns the bumps
 
+    def face(self):
+        """Its detent face: the gn ring's floor lands here."""
+        return B1 - D.floor_t
+
+    def pieces(self):
+        # `disc`, not `spigot`: a spigot bores to `spigot_bore`, which is
+        # the fit that rides over this tube. Bored to it here, the disc
+        # would clear its own rod by `slip` and the tube would print in
+        # two. Only the bolt hole belongs down the middle, and that is cut.
+        return (("disc", B0, self.face()),
+                ("rod", self.face() - EPS, D.inner_end_z))
+
     def build(self):
         body = union(
-            spigot(B0, B1),
-            cylinder(h=D.inner_end_z - B1 + EPS, d=D.inner_od).up(B1 - EPS),
+            stack(self.pieces()),
             self._key(),
-            bumps(B1),
+            bumps(self.face()),
         )
         cutters = [cylinder(h=D.inner_end_z + 2 * EPS, d=D.bolt_d).down(EPS)]
         cutters += self._gn_scale()
@@ -323,24 +368,33 @@ class _SettingRing(Component):
     CARRIES = ()        # (z0, z1) of the band this ring's scale sits in
     LEGEND = ("", "")   # (before, after) the window, on its own line
 
+    # How far short of its band this ring's spigot stops, to leave room for
+    # the floor of the segment that reads it. The last ring is read by the
+    # end cap, whose floor grows the other way, into the tail.
+    TOP_INSET = D.floor_t
+
+    def _top(self):
+        return self.CARRIES[1] - self.TOP_INSET
+
     def tight_bbox(self):
         # The bumps stand proud of the spigot's end face.
-        return _extents(self.READS[0] + D.seam_gap,
-                        self.CARRIES[1] + D.bump_proud)
+        return _extents(self.READS[0] + D.seam_gap, self._top() + D.bump_proud)
+
+    def pieces(self):
+        r0, r1 = self.READS
+        return (("sleeve", r0 + D.seam_gap, r1),
+                ("floor", r1 - D.floor_t, r1),   # without it, two shells
+                ("spigot", r1, self._top()))
 
     def build(self):
         r0, r1 = self.READS
-        c1 = self.CARRIES[1]
-        body = union(
-            sleeve(r0 + D.seam_gap, r1),
-            spigot(r1, c1),
-            bumps(c1),
-        )
+        top = self._top()
+        body = union(stack(self.pieces()), bumps(top))
         cutters = [
             window(z0=r0 + D.window_margin,
                    length=(r1 - r0) - 2 * D.window_margin),
-            divots(r1),
-            keyway(r0 + D.seam_gap, c1),
+            divots(r1 - D.floor_t),     # cut into the floor's underside
+            keyway(r0 + D.seam_gap, top),
         ]
         # Name before the window and unit after it, on the window's own
         # line, so the three read across together: GN 32 m.
@@ -436,6 +490,11 @@ class DistRing(_SettingRing):
 
     READS = (B2, B3)
     CARRIES = (B3, B4)
+    # Read by the end cap, whose floor is the solid tail above band D
+    # rather than an annulus taken out of it. So this spigot runs the band
+    # out in full, and the detent face stays on the boundary.
+    TOP_INSET = 0
+
     @property
     def LEGEND(self):
         # Its window shows the third setting, which the layout names. When
@@ -495,11 +554,15 @@ class EndCap(Component):
     def tight_bbox(self):
         return _extents(B3 + D.seam_gap, D.overall_len)
 
+    def pieces(self):
+        # Its floor is the whole solid tail rather than an annulus taken
+        # out of the sleeve: past band D there is nothing to make room
+        # for, so it grows upward and band D's face stays on the boundary.
+        return (("sleeve", B3 + D.seam_gap, B4),
+                ("tail", B4, D.overall_len))
+
     def build(self):
-        body = union(
-            sleeve(B3 + D.seam_gap, B4),
-            cylinder(h=D.overall_len - B4, d=D.outer_od).up(B4),
-        )
+        body = stack(self.pieces())
         cutters = [
             # The slot spans the columns exactly, ending on the first and
             # last division rather than half a cell past them. Overrun and
@@ -538,56 +601,55 @@ class EndCap(Component):
         return one.rotate_copy(angle=360.0 / int(D.spring_count),
                                n=int(D.spring_count), axis=[0, 0, 1])
 
-    def _legends(self):
-        # Aperture headings come before the slot, one per column; the
-        # slot's own name and unit sit either side of its mid-height, on
-        # the same line, the way each setting window is labelled.
-        above = ABOVE
-        power_mid = B3 + D.power_band / 2
+    def text_specs(self):
+        """Where every label on the cap's outside goes.
 
+        Yielded as placements rather than cut straight to geometry so that
+        `check_cap_text_clear` can measure the same numbers the build
+        uses. Every mark on the rings is positioned by a scale's
+        arithmetic. These are placed by hand against the slot, so a check
+        is the only thing keeping any two of them off each other.
+        """
         # The slot is a column of eight readings rather than one value, so
         # its name sits under the column instead of beside it, where it
-        # would land on the aperture headings.
+        # would land on the aperture headings. Under it as the tool is
+        # held: the cap has no material the other side of the slot.
         before, after = LAYOUT.legend
-        # Under the column as the tool is held: the cap has no material
-        # on the other side of the slot to engrave.
         head_z = B4 + D.legend_font + 2
-        yield engrave_text(
-            od=D.outer_od, z=head_z, angle=0,
-            label=" ".join(p for p in (before, after) if p),
-            size=D.legend_font,
-        )
-        yield engrave_text(
-            od=D.outer_od, z=head_z, angle=above,
-            label=LAYOUT.heading, size=D.legend_font,
-        )
+        yield dict(label=" ".join(p for p in (before, after) if p),
+                   z=head_z, angle=0, size=D.legend_font)
+        yield dict(label=LAYOUT.heading, z=head_z, angle=ABOVE,
+                   size=D.legend_font)
 
-        # Aperture headings beside the slot, one per column, with a rule
-        # at each boundary so the eye can tell the columns apart. The rule
-        # runs from the slot's edge out past the widest heading, so the
-        # headings sit in ruled cells rather than floating beside the slot.
+        # Aperture headings beside the slot, one per column.
+        for a, label in enumerate(LAYOUT.column_labels):
+            yield dict(label=label,
+                       z=B3 + D.power_margin + (a + 0.5) * D.power_col,
+                       angle=ABOVE, size=D.power_font)
+
+        # On the back: the assumption the guide numbers are quoted under,
+        # and a maker's line below it. Below in z, on the same meridian --
+        # set side by side they would cut into each other, since a line of
+        # legend at this font wraps most of a half turn of the barrel.
+        power_mid = B3 + D.power_band / 2
+        line_gap = D.legend_font + 2
+        for label, dz in (("GN @ 50mm  ISO 100  m", +line_gap / 2),
+                          ("BriansSparetime", -line_gap / 2)):
+            yield dict(label=label, z=power_mid + dz, angle=180,
+                       size=D.legend_font)
+
+    def _legends(self):
+        for spec in self.text_specs():
+            yield engrave_text(od=D.outer_od, **spec)
+
+        # A rule at each column boundary, so the eye can tell the columns
+        # apart. It runs from the slot's edge out past the widest heading,
+        # which puts the headings in ruled cells rather than floating
+        # beside the slot.
         widest = max(LAYOUT.column_labels, key=len)
         inner = D.window_arc / 2 + 1
-        outer = above + label_arc(D.outer_od, widest, D.power_font) / 2 + 1.5
+        outer = ABOVE + label_arc(D.outer_od, widest, D.power_font) / 2 + 1.5
         span = radians(outer - inner) * D.outer_od / 2
-        for a, label in enumerate(LAYOUT.column_labels):
-            yield engrave_text(
-                od=D.outer_od, z=B3 + D.power_margin + (a + 0.5) * D.power_col,
-                label=label, angle=above, size=D.power_font,
-            )
+        for a in range(len(LAYOUT.column_labels) + 1):
             yield tick(z=B3 + D.power_margin + a * D.power_col,
                        angle=(inner + outer) / 2, length=span)
-        yield tick(z=B3 + D.power_margin
-                     + len(LAYOUT.column_labels) * D.power_col,
-                   angle=(inner + outer) / 2, length=span)
-
-        # On the back: the assumption the guide numbers are quoted
-        # under, and a maker's line below it.
-        yield engrave_text(
-            od=D.outer_od, z=power_mid, label="GN @ 50mm  ISO 100  m",
-            angle=180, size=D.legend_font,
-        )
-        yield engrave_text(
-            od=D.outer_od, z=power_mid, label="BriansSparetime",
-            angle=180 + 17, size=D.legend_font,
-        )

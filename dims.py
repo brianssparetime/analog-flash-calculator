@@ -35,6 +35,12 @@ A spigot's end face meets the next segment's sleeve floor, an annulus at
 as two nested segments can meet: only the inner tube reaches the bolt, so
 any face shared by two concentric segments sits at the nesting radius.
 
+That floor is also what holds a segment together. A sleeve rides the
+spigot beneath it and so has to bore wider than it, which leaves a
+segment's own sleeve and its own spigot `slip` apart with no length in
+common. The floor is the annulus that joins the two, and it costs the
+band it reads `floor_t`.
+
 Sleeves never touch each other. Consecutive sleeve ends are held apart by
 `seam_gap`, which is wider than a bump is tall, so the detent faces are
 the only place the stack can bottom out and a bump can always lift clear.
@@ -134,7 +140,28 @@ class Dims(Spec):
         power_band = power_col * {len(LAYOUT.column_labels)} + 2 * power_margin
 
         seam_gap = 1.0                  # sleeves never touch; > bump_proud
-        tip_gap = 0.5                   # non-detent faces stay apart
+
+        # A sleeve's bore and its own spigot's outside are `slip` apart and
+        # share no length, so nothing joins them: without an annulus
+        # bridging the two, a segment prints as two loose shells. The floor
+        # fills the top of the sleeve's bore, and the spigot it reads
+        # retreats by the same amount so the floor has somewhere to sit.
+        # The floor's underside is then the detent face.
+        #
+        # It has to come out of the read band rather than sit above it:
+        # above the band boundary is `seam_gap`, and the next sleeve starts
+        # there. The end cap is the exception, and the reason it can be:
+        # its floor grows upward into the tail, where nothing else is, so
+        # band D's face stays on the boundary.
+        floor_t = 1.5
+
+        # What separates the inner tube's tip from the end cap's bore
+        # ceiling, and the only place the stack's length error can go: four
+        # segments' worth of layer quantisation accumulates here. If it
+        # closes, the tube takes the bolt load in parallel and the springs
+        # never compress -- the same silent no-click failure the washer is
+        # guarded against below, reached from the other end.
+        tip_gap = 2.0
 
         gn_z0 = 0
         iso_z0 = gn_z0 + gn_band
@@ -225,6 +252,10 @@ class Dims(Spec):
         spigot_bore > inner_od          # running fits, not interference
         sleeve_bore > spigot_od
         seam_gap > bump_proud           # sleeves cannot bottom out first
+        floor_t > divot_deep            # a divot cannot cut through it
+        # The spigot being read stops `floor_t` short of the band, so this
+        # is what keeps the scale surface covering the whole window.
+        floor_t < window_margin
         window_arc < {360.0 / DETENTS}  # one slot at a time
         power_margin, window_margin, key_len, cap_web_t > 0
         divot_sphere_r + detent_r < spigot_od / 2
@@ -242,7 +273,7 @@ class Dims(Spec):
         pocket_r - pocket_dia / 2 > inner_od / 2 + key_h + key_slip / 2
         pocket_z0 > power_z1 + cap_web_t           # floor stays out of the slot
         pocket_web >= 2                 # printable web between the pockets
-        spring_depth > 2 * bump_proud   # room to climb out of a detent
+        spring_proud > 2 * bump_proud   # room to climb out of a detent
         overall_len - inner_end_z > tip_gap     # tube clear of the end
     """
 
