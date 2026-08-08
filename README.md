@@ -25,7 +25,7 @@ contains a readout window giving your the relationship between aperture and dist
   <img src="rendered_img/hero.png?v=2" alt="The assembled calculator standing on end: three setting windows and the readout slot stacked up the near face" width="480">
 </p>
 
-*The whole instrument is 73 x 43 mm.*
+*The whole instrument is 75 x 43 mm.*
 
 
 
@@ -46,8 +46,12 @@ aperture heading, in metres. Where an aperture falls off the end of the
 scale at that setting, its column is blank.
 
 To change a setting, twist the two segments either side of its seam
-against each other. The spring lets the bumps cam out of their dimples,
+against each other. The springs let the bumps cam out of their dimples,
 so nothing has to be pulled apart first.
+
+GN is the exception. Its ring reads the inner tube, which sits inside
+the whole stack, so twist it against the end cap. The cap is keyed to
+that tube and turns with it.
 
 Turned past the end of a scale, a window shows an arrow instead of a
 blank. It points toward the nearer end of that scale, so turning that way
@@ -118,11 +122,14 @@ degree overhang and prints clean, while a dome pointing downward sags.
   <img src="rendered_img/print-plate.png" alt="The five printed parts laid out on the bed, each standing on its axis" width="640">
 </p>
 
-*The whole tool is one plate. Left to right: the inner tube, the GN ring,
-the ISO ring, the third ring carrying the readout table, and the end cap.
-Each stands on the axis it was engraved around.*
+*The whole tool is one plate, in the order it assembles: the inner tube,
+the GN ring, the ISO ring, the third ring carrying the readout table,
+and the end cap. Each stands on the axis it was engraved around.*
 
-- The inner tube is a 16 mm column standing 75 mm tall. Use a brim.
+- Each segment bridges a 10 mm ledge where its bore steps down, and the
+  detents sit on that face. Print one ring first and check it came out
+  flat.
+- The inner tube is a 16 mm column standing 71 mm tall. Use a brim.
 - Thinnest wall is 3.4 mm, leaving 2.95 mm under an engraving beside a
   window.
 - Running fits carry 0.2 mm of radial clearance. If your printer runs
