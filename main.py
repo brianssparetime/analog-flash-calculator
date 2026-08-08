@@ -45,7 +45,7 @@ from scadwright.boolops import union
 from scadwright.composition_helpers import arrange_on_bed
 from scadwright.design import Design, run, variant
 from scadwright.primitives import cylinder
-from scadwright.shapes import Spring, Tube
+from scadwright.shapes import HexNut, NutSpec, Spring, Tube
 
 import scales
 from dims import LAYOUT, Dims as D
@@ -101,6 +101,13 @@ class AnalogFlashCalculator(Design):
         Spring(r=1.5, wire_r=0.25, pitch=D.pocket_depth / 8, turns=8)
         for _ in range(int(D.spring_count))
     )
+    # A named part rather than a six-sided cylinder, for the same reason.
+    # `morph` groups anonymous primitives under one name, so an inline nut
+    # shares a slot with the bolt it is drawn beside and goes on when the
+    # bolt does. Named, it gets a slot of its own, and the default order
+    # puts it last of everything, which is when a nut goes on.
+    # 1/4-20: 7/16 inch across the flats.
+    nut = HexNut(spec=NutSpec(d=6.35, af=11.11, h=5.5))
 
     def _posed(self):
         """The four segments rotated to POSE, innermost first.
@@ -143,7 +150,7 @@ class AnalogFlashCalculator(Design):
         cap_lift = spread * 4 * EXPLODE_STEP      # the cap's own travel
         tail = cap_lift + spread * 25             # nut end, clear above it
         spring_z = D.pocket_z0 + cap_lift + spread * 12
-        washer_t, head_t, nut_t = 1.6, 5.0, 5.5
+        washer_t, head_t, nut_t = self.washer.h, 5.0, self.nut.h
         head_z = -washer_t + lead                 # its face bears on z = 0
         # Cut off flush with the nut, as it would be in the hand: a bolt
         # bought long enough to assemble with leaves a stub otherwise. The
@@ -163,10 +170,10 @@ class AnalogFlashCalculator(Design):
                    .translate([D.pocket_r, 0, spring_z])
                    .rotate([0, 0, i * 360.0 / n])
                    .color("gold"))
+        # The nut lands outside the washer, which is what holds the washer
+        # on, so it sits a washer's thickness further out than the fender.
         yield self.fender.up(D.overall_len + tail).color("silver")
-        yield cylinder(h=nut_t, d=11.5, fn=6).up(
-            D.overall_len + washer_t + tail
-        ).color("silver")
+        yield self.nut.up(D.overall_len + washer_t + tail).color("silver")
 
     def _scene(self, spread):
         """The whole assembly, drawn apart by `spread` (0 together, 1 apart).
@@ -218,7 +225,14 @@ class AnalogFlashCalculator(Design):
         return self._scene(0.0).halve([0, -1, 0])
 
     # The stack coming together, for a posting-friendly animation.
-    assemble = morph(stages=["exploded", "display"])
+    #
+    # The hold is what makes the last part arrive. OpenSCAD renders frame
+    # k at $t = k/n, so the final frame sits just short of 1 and whatever
+    # moves last stops just short of its seat: at 48 frames the nut would
+    # hang 13 mm off the washer, in the very frame the animation rests on.
+    # Resting at the display pose for the last of the timeline puts every
+    # part home before the last frame is taken.
+    assemble = morph(stages=["exploded", "display"], hold={"display": 0.08})
 
 
 if __name__ == "__main__":
