@@ -130,8 +130,14 @@ class AnalogFlashCalculator(Design):
         their pockets. `spread` draws the two ends apart for the exploded
         stage. What is yielded, and in what order, never varies with it.
         """
+        # The cap is the last segment off, so everything at the nut end has
+        # to clear the height the cap itself reaches, not one step short of
+        # it. Short, and the springs draw apart below the pockets they are
+        # supposed to fall into, and the washer inside the cap.
         lead = -spread * 30                       # head end, below
-        tail = spread * (3 * EXPLODE_STEP + 20)   # nut end, above
+        cap_lift = spread * 4 * EXPLODE_STEP      # the cap's own travel
+        tail = cap_lift + spread * 25             # nut end, clear above it
+        spring_z = D.pocket_z0 + cap_lift + spread * 12
         washer_t, head_t, nut_t = 1.6, 5.0, 5.5
         head_z = -washer_t + lead                 # its face bears on z = 0
         # Cut off flush with the nut, as it would be in the hand: a bolt
@@ -149,7 +155,7 @@ class AnalogFlashCalculator(Design):
         n = int(D.spring_count)
         for i in range(n):
             yield (self.spring
-                   .translate([D.pocket_r, 0, D.pocket_z0 + tail])
+                   .translate([D.pocket_r, 0, spring_z])
                    .rotate([0, 0, i * 360.0 / n])
                    .color("gold"))
         yield self.fender.up(D.overall_len + tail).color("silver")
